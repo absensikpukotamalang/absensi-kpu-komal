@@ -41,6 +41,7 @@
 
     input, select {
       border: 1px solid #ccc;
+      color: black;
     }
 
     button {
@@ -101,7 +102,6 @@
 
   <div id="absenBox" style="display:none;">
     <h3 id="namaUser"></h3>
-
     <h2 id="statusText"></h2>
     <h3 id="jamText"></h3>
     <h2 id="terlambatText"></h2>
@@ -120,13 +120,13 @@
   </div>
 
   <script>
-    const API = "https://script.google.com/macros/s/AKfycbwGwXZlxErw-SXJNV8HRbMSw9J-0EK0LI5ntXakFdjeyXysJh-Px5Uzb-90pwiCqi0T/exec";
+    const API = "GANTI_DENGAN_URL_APPS_SCRIPT_KAMU";
 
     let pegawai = [];
     let config = {};
     let userLogin = null;
     let fotoBase64 = null;
-    let streamKamera = null;
+    let realtimeStarted = false;
 
     const loginNama = document.getElementById("loginNama");
     const pin = document.getElementById("pin");
@@ -146,13 +146,10 @@
       try {
         loginInfo.innerText = "Memuat data pegawai...";
         const res = await fetch(API);
-        const text = await res.text();
+        const data = await res.json();
 
-        let data;
-        try {
-          data = JSON.parse(text);
-        } catch (e) {
-          throw new Error("Response GET bukan JSON: " + text);
+        if (data.result === "error") {
+          throw new Error(data.message);
         }
 
         pegawai = data.pegawai || [];
@@ -170,6 +167,7 @@
         loginInfo.innerText = "";
         loadUser();
         startCamera();
+
       } catch (err) {
         console.error(err);
         loginInfo.innerText = "Gagal memuat data: " + err.message;
@@ -179,13 +177,13 @@
 
     async function startCamera() {
       try {
-        streamKamera = await navigator.mediaDevices.getUserMedia({
+        const stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: "user" },
           audio: false
         });
-        video.srcObject = streamKamera;
+        video.srcObject = stream;
       } catch (err) {
-        console.error("Kamera gagal:", err);
+        console.error(err);
         alert("Kamera tidak bisa diakses: " + err.message);
       }
     }
@@ -227,6 +225,11 @@
       realtime();
     }
 
+    function logout() {
+      localStorage.removeItem("user");
+      location.reload();
+    }
+
     function ambilFoto() {
       if (!video.srcObject) {
         alert("Kamera belum siap");
@@ -248,16 +251,17 @@
     }
 
     function ulangFoto() {
+      fotoBase64 = null;
+      preview.src = "";
       preview.style.display = "none";
       video.style.display = "block";
-      fotoBase64 = null;
-      submitInfo.innerText = "Foto diulang";
+      submitInfo.innerText = "";
     }
 
     async function kirimAbsen() {
       try {
         if (!userLogin) {
-          alert("User belum login");
+          alert("Silakan login dulu");
           return;
         }
 
@@ -266,7 +270,9 @@
           return;
         }
 
-        const jam = new Date().toLocaleTimeString("id-ID", {
+        submitInfo.innerText = "Mengirim absen...";
+
+        const jamSekarang = new Date().toLocaleTimeString("id-ID", {
           hour12: false,
           hour: "2-digit",
           minute: "2-digit",
@@ -275,58 +281,35 @@
 
         const status = statusText.innerText.includes("MASUK") ? "MASUK" : "PULANG";
 
-        const payload = {
-          nama: userLogin.nama,
-          nip: userLogin.nip,
-          jenis: "WFO",
-          status: status,
-          jam: jam,
-          foto: fotoBase64
-        };
-
-        submitInfo.innerText = "Mengirim data absen...";
+        const form = new FormData();
+        form.append("nama", userLogin.nama);
+        form.append("nip", userLogin.nip);
+        form.append("jenis", "WFO");
+        form.append("status", status);
+        form.append("jam", jamSekarang);
+        form.append("foto", fotoBase64);
 
         const res = await fetch(API, {
           method: "POST",
-          headers: {
-            "Content-Type": "text/plain;charset=utf-8"
-          },
-          body: JSON.stringify(payload)
+          body: form
         });
 
-        const text = await res.text();
-        console.log("RESP RAW:", text);
+        const data = await res.json();
 
-        let result;
-        try {
-          result = JSON.parse(text);
-        } catch (e) {
-          throw new Error("Response bukan JSON: " + text);
+        if (data.result === "error") {
+          throw new Error(data.message);
         }
 
-        if (result.result === "error") {
-          submitInfo.innerText = "Gagal: " + result.message;
-          alert("Gagal: " + result.message);
-          return;
-        }
-
-        submitInfo.innerText = "Absen berhasil dikirim";
-        alert("Berhasil absen");
+        submitInfo.innerText = "Absensi berhasil";
+        alert("Absensi berhasil");
         location.reload();
 
       } catch (err) {
-        console.error("ERROR SUBMIT:", err);
-        submitInfo.innerText = "Submit gagal: " + err.message;
-        alert("Submit gagal: " + err.message);
+        console.error(err);
+        submitInfo.innerText = "Gagal: " + err.message;
+        alert("Gagal submit: " + err.message);
       }
     }
-
-    function logout() {
-      localStorage.removeItem("user");
-      location.reload();
-    }
-
-    let realtimeStarted = false;
 
     function realtime() {
       if (realtimeStarted) return;
@@ -334,7 +317,8 @@
 
       setInterval(() => {
         const now = new Date();
-        const jam = now.toLocaleTimeString("id-ID", {
+
+        const jamLengkap = now.toLocaleTimeString("id-ID", {
           hour12: false,
           hour: "2-digit",
           minute: "2-digit",
@@ -342,13 +326,15 @@
           timeZone: "Asia/Jakarta"
         });
 
-        const jamShort = jam.substring(0, 5);
-        jamText.innerText = jam;
+        const jamShort = jamLengkap.substring(0, 5);
+        jamText.innerText = jamLengkap;
 
         const batasMasuk = config.batas_masuk || "08:00";
-        const status = jamShort < batasMasuk ? "MASUK" : "PULANG";
+        const jamMasuk = config.jam_masuk || "07:30";
 
-        if (status === "MASUK") {
+        const statusSekarang = jamShort < batasMasuk ? "MASUK" : "PULANG";
+
+        if (statusSekarang === "MASUK") {
           statusText.innerText = "🟢 MASUK";
           document.body.className = "masuk";
         } else {
@@ -356,37 +342,31 @@
           document.body.className = "pulang";
         }
 
-        hitungTerlambat(now, jamShort);
+        // terlambat
+        if (jamShort > jamMasuk && jamShort < batasMasuk) {
+          const [h1, m1] = jamShort.split(":").map(Number);
+          const [h2, m2] = jamMasuk.split(":").map(Number);
+          const selisih = (h1 * 60 + m1) - (h2 * 60 + m2);
+
+          terlambatText.innerText = "TERLAMBAT " + selisih + " MENIT";
+
+          const hari = now.getDay();
+          const jamPulang = hari === 5
+            ? (config.jam_pulang_jumat || "16:30")
+            : (config.jam_pulang_senin_kamis || "16:00");
+
+          const [hp, mp] = jamPulang.split(":").map(Number);
+          const total = (hp * 60 + mp) + selisih;
+          const hh = String(Math.floor(total / 60)).padStart(2, "0");
+          const mm = String(total % 60).padStart(2, "0");
+
+          rekomendasiText.innerText = "Pulang: " + hh + ":" + mm;
+        } else {
+          terlambatText.innerText = "";
+          rekomendasiText.innerText = "";
+        }
+
       }, 1000);
-    }
-
-    function hitungTerlambat(now, jamNow) {
-      const jm = config.jam_masuk || "07:30";
-      const batasMasuk = config.batas_masuk || "08:00";
-
-      if (jamNow > jm && jamNow < batasMasuk) {
-        const [h1, m1] = jamNow.split(":").map(Number);
-        const [h2, m2] = jm.split(":").map(Number);
-        const selisih = (h1 * 60 + m1) - (h2 * 60 + m2);
-
-        terlambatText.innerText = "TERLAMBAT " + selisih + " MENIT";
-
-        const hari = now.getDay();
-        const jp = (hari === 5)
-          ? (config.jam_pulang_jumat || "16:30")
-          : (config.jam_pulang_senin_kamis || "16:00");
-
-        const [h, m] = jp.split(":").map(Number);
-        const total = h * 60 + m + selisih;
-
-        const hh = String(Math.floor(total / 60)).padStart(2, "0");
-        const mm = String(total % 60).padStart(2, "0");
-
-        rekomendasiText.innerText = "Pulang: " + hh + ":" + mm;
-      } else {
-        terlambatText.innerText = "";
-        rekomendasiText.innerText = "";
-      }
     }
 
     initApp();
