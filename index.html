@@ -120,7 +120,7 @@
   </div>
 
   <script>
-    const API = "https://script.google.com/macros/s/AKfycbxl0fJC2790vwN9DYnr6xCXW_BBuMAIP0M7btnF4SIpwzAw4dV1hTMDP1f6k652sp4/exec";
+    const API = "GANTI_DENGAN_URL_WEB_APP_KAMU";
 
     let pegawai = [];
     let config = {};
@@ -145,8 +145,18 @@
     async function initApp() {
       try {
         loginInfo.innerText = "Memuat data pegawai...";
+
         const res = await fetch(API);
-        const data = await res.json();
+        const text = await res.text();
+
+        console.log("GET RESPONSE RAW:", text);
+
+        let data;
+        try {
+          data = JSON.parse(text);
+        } catch (e) {
+          throw new Error("Response API bukan JSON: " + text.substring(0, 200));
+        }
 
         if (data.result === "error") {
           throw new Error(data.message);
@@ -154,6 +164,8 @@
 
         pegawai = data.pegawai || [];
         config = data.setting || {};
+
+        loginNama.innerHTML = '<option value="">-- Pilih Nama --</option>';
 
         pegawai.forEach(p => {
           const o = document.createElement("option");
@@ -165,6 +177,7 @@
         });
 
         loginInfo.innerText = "";
+
         loadUser();
         startCamera();
 
@@ -294,7 +307,15 @@
           body: form
         });
 
-        const data = await res.json();
+        const text = await res.text();
+        console.log("POST RESPONSE RAW:", text);
+
+        let data;
+        try {
+          data = JSON.parse(text);
+        } catch (e) {
+          throw new Error("Response POST bukan JSON: " + text.substring(0, 200));
+        }
 
         if (data.result === "error") {
           throw new Error(data.message);
@@ -342,7 +363,6 @@
           document.body.className = "pulang";
         }
 
-        // terlambat
         if (jamShort > jamMasuk && jamShort < batasMasuk) {
           const [h1, m1] = jamShort.split(":").map(Number);
           const [h2, m2] = jamMasuk.split(":").map(Number);
