@@ -333,61 +333,64 @@
     }
 
     function realtime() {
-      if (realtimeStarted) return;
-      realtimeStarted = true;
+  if (realtimeStarted) return;
+  realtimeStarted = true;
 
-      setInterval(() => {
-        const now = new Date();
+  setInterval(() => {
+    const now = new Date();
 
-        const jamLengkap = now.toLocaleTimeString("id-ID", {
-          hour12: false,
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit",
-          timeZone: "Asia/Jakarta"
-        });
+    const jamLengkap = now.toLocaleTimeString("id-ID", {
+      hour12: false,
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      timeZone: "Asia/Jakarta"
+    });
 
-        const jamShort = jamLengkap.substring(0, 5);
-        jamText.innerText = jamLengkap;
+    const jamShort = jamLengkap.substring(0, 5);
+    jamText.innerText = jamLengkap;
 
-        const batasMasuk = config.batas_masuk || "08:00";
-        const jamMasuk = config.jam_masuk || "07:30";
+    const jamMasuk = (config.jam_masuk || "07:30").trim();
+    const batasMasuk = (config.batas_masuk || "08:00").trim();
 
-        const statusSekarang = jamShort < batasMasuk ? "MASUK" : "PULANG";
+    console.log("jamShort =", jamShort);
+    console.log("jamMasuk =", jamMasuk);
+    console.log("batasMasuk =", batasMasuk);
 
-        if (statusSekarang === "MASUK") {
-          statusText.innerText = "🟢 MASUK";
-          document.body.className = "masuk";
-        } else {
-          statusText.innerText = "🔴 PULANG";
-          document.body.className = "pulang";
-        }
+    const statusSekarang = jamShort < batasMasuk ? "MASUK" : "PULANG";
 
-        if (jamShort > jamMasuk && jamShort < batasMasuk) {
-          const [h1, m1] = jamShort.split(":").map(Number);
-          const [h2, m2] = jamMasuk.split(":").map(Number);
-          const selisih = (h1 * 60 + m1) - (h2 * 60 + m2);
-
-          terlambatText.innerText = "TERLAMBAT " + selisih + " MENIT";
-
-          const hari = now.getDay();
-          const jamPulang = hari === 5
-            ? (config.jam_pulang_jumat || "16:30")
-            : (config.jam_pulang_senin_kamis || "16:00");
-
-          const [hp, mp] = jamPulang.split(":").map(Number);
-          const total = (hp * 60 + mp) + selisih;
-          const hh = String(Math.floor(total / 60)).padStart(2, "0");
-          const mm = String(total % 60).padStart(2, "0");
-
-          rekomendasiText.innerText = "Pulang: " + hh + ":" + mm;
-        } else {
-          terlambatText.innerText = "";
-          rekomendasiText.innerText = "";
-        }
-
-      }, 1000);
+    if (statusSekarang === "MASUK") {
+      statusText.innerText = "🟢 MASUK";
+      document.body.className = "masuk";
+    } else {
+      statusText.innerText = "🔴 PULANG";
+      document.body.className = "pulang";
     }
+
+    if (jamShort > jamMasuk && jamShort < batasMasuk) {
+      const [h1, m1] = jamShort.split(":").map(Number);
+      const [h2, m2] = jamMasuk.split(":").map(Number);
+      const selisih = (h1 * 60 + m1) - (h2 * 60 + m2);
+
+      terlambatText.innerText = "TERLAMBAT " + selisih + " MENIT";
+
+      const hari = now.getDay();
+      const jamPulang = hari === 5
+        ? (config.jam_pulang_jumat || "16:30").trim()
+        : (config.jam_pulang_senin_kamis || "16:00").trim();
+
+      const [hp, mp] = jamPulang.split(":").map(Number);
+      const total = (hp * 60 + mp) + selisih;
+      const hh = String(Math.floor(total / 60)).padStart(2, "0");
+      const mm = String(total % 60).padStart(2, "0");
+
+      rekomendasiText.innerText = "Pulang: " + hh + ":" + mm;
+    } else {
+      terlambatText.innerText = "";
+      rekomendasiText.innerText = "";
+    }
+  }, 1000);
+}
 
     initApp();
   </script>
