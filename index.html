@@ -28,23 +28,28 @@
       margin: 0 auto;
     }
 
-    select, input, button {
+    select, input, button, textarea {
       width: 90%;
       max-width: 400px;
       padding: 15px;
       font-size: 18px;
       margin: 10px 0;
       border-radius: 10px;
-      border: none;
       box-sizing: border-box;
     }
 
-    input, select {
+    input, select, textarea {
       border: 1px solid #ccc;
       color: black;
     }
 
+    textarea {
+      min-height: 90px;
+      resize: vertical;
+    }
+
     button {
+      border: none;
       cursor: pointer;
       font-weight: bold;
     }
@@ -85,6 +90,12 @@
       margin-top: 8px;
       opacity: 0.95;
     }
+
+    #jamMasukUser {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
   </style>
 </head>
 <body>
@@ -102,6 +113,22 @@
 
   <div id="absenBox" style="display:none;">
     <h3 id="namaUser"></h3>
+    <div id="jamMasukUser">Jam masuk: (kosong)</div>
+
+    <select id="jenisAbsen">
+      <option value="WFO" selected>WFO</option>
+      <option value="DL">DL</option>
+      <option value="IJIN">IJIN</option>
+      <option value="SAKIT">SAKIT</option>
+      <option value="WFA">WFA</option>
+    </select>
+
+    <div id="formPulang" style="display:none;">
+      <textarea id="uraianTugas" placeholder="Uraian tugas"></textarea>
+      <textarea id="outputKerja" placeholder="Output"></textarea>
+      <textarea id="alamatKerja" placeholder="Alamat"></textarea>
+    </div>
+
     <h2 id="statusText"></h2>
     <h3 id="jamText"></h3>
     <h2 id="terlambatText"></h2>
@@ -121,9 +148,11 @@
 
   <script>
     const API = "https://script.google.com/macros/s/AKfycbxl0fJC2790vwN9DYnr6xCXW_BBuMAIP0M7btnF4SIpwzAw4dV1hTMDP1f6k652sp4/exec";
+    const SESSION_MS = 10 * 60 * 1000; // 10 menit
 
     let pegawai = [];
     let config = {};
+    let jamMasukHariIni = {};
     let userLogin = null;
     let fotoBase64 = null;
     let realtimeStarted = false;
@@ -133,6 +162,12 @@
     const loginBox = document.getElementById("loginBox");
     const absenBox = document.getElementById("absenBox");
     const namaUser = document.getElementById("namaUser");
+    const jamMasukUser = document.getElementById("jamMasukUser");
+    const jenisAbsen = document.getElementById("jenisAbsen");
+    const formPulang = document.getElementById("formPulang");
+    const uraianTugas = document.getElementById("uraianTugas");
+    const outputKerja = document.getElementById("outputKerja");
+    const alamatKerja = document.getElementById("alamatKerja");
     const statusText = document.getElementById("statusText");
     const jamText = document.getElementById("jamText");
     const terlambatText = document.getElementById("terlambatText");
@@ -164,6 +199,7 @@
 
         pegawai = data.pegawai || [];
         config = data.setting || {};
+        jamMasukHariIni = data.jamMasukHariIni || {};
 
         loginNama.innerHTML = '<option value="">-- Pilih Nama --</option>';
 
@@ -201,6 +237,36 @@
       }
     }
 
+    function saveSession(user) {
+      const payload = {
+        user: user,
+        expiredAt: Date.now() + SESSION_MS
+      };
+      localStorage.setItem("session_absen", JSON.stringify(payload));
+    }
+
+    function getSession() {
+      const raw = localStorage.getItem("session_absen");
+      if (!raw) return null;
+
+      try {
+        const session = JSON.parse(raw);
+        if (!session.expiredAt || Date.now() > session.expiredAt) {
+          localStorage.removeItem("session_absen");
+          return null;
+        }
+        return session.user;
+      } catch (e) {
+        localStorage.removeItem("session_absen");
+        return null;
+      }
+    }
+
+    function refreshSession() {
+      if (!userLogin) return;
+      saveSession(userLogin);
+    }
+
     function login() {
       const selected = loginNama.selectedOptions[0];
 
@@ -219,31 +285,45 @@
         nip: selected.dataset.nip
       };
 
-      localStorage.setItem("user", JSON.stringify(userLogin));
+      saveSession(userLogin);
       masuk();
     }
 
     function loadUser() {
-      const u = localStorage.getItem("user");
-      if (u) {
-        userLogin = JSON.parse(u);
+      const sessionUser = getSession();
+      if (sessionUser) {
+        userLogin = sessionUser;
         masuk();
       }
+    }
+
+    function updateJamMasukUser() {
+      if (!userLogin) {
+        jamMasukUser.innerText = "Jam masuk: (kosong)";
+        return;
+      }
+
+      const jamMasuk = jamMasukHariIni[userLogin.nama] || "";
+      jamMasukUser.innerText = "Jam masuk: " + (jamMasuk ? jamMasuk.replace(":", ".") : "(kosong)");
     }
 
     function masuk() {
       loginBox.style.display = "none";
       absenBox.style.display = "block";
       namaUser.innerText = userLogin.nama;
+      updateJamMasukUser();
       realtime();
+      refreshSession();
     }
 
     function logout() {
-      localStorage.removeItem("user");
+      localStorage.removeItem("session_absen");
       location.reload();
     }
 
     function ambilFoto() {
+      refreshSession();
+
       if (!video.srcObject) {
         alert("Kamera belum siap");
         return;
@@ -264,6 +344,7 @@
     }
 
     function ulangFoto() {
+      refreshSession();
       fotoBase64 = null;
       preview.src = "";
       preview.style.display = "none";
@@ -271,8 +352,21 @@
       submitInfo.innerText = "";
     }
 
+    function updateFormPulang(statusSekarang) {
+      if (statusSekarang === "PULANG") {
+        formPulang.style.display = "block";
+      } else {
+        formPulang.style.display = "none";
+        uraianTugas.value = "";
+        outputKerja.value = "";
+        alamatKerja.value = "";
+      }
+    }
+
     async function kirimAbsen() {
       try {
+        refreshSession();
+
         if (!userLogin) {
           alert("Silakan login dulu");
           return;
@@ -293,14 +387,37 @@
         });
 
         const status = statusText.innerText.includes("MASUK") ? "MASUK" : "PULANG";
+        const jenis = jenisAbsen.value || "WFO";
+
+        const nilaiUraian = uraianTugas.value.trim();
+        const nilaiOutput = outputKerja.value.trim();
+        const nilaiAlamat = alamatKerja.value.trim();
+
+        if (status === "PULANG") {
+          if (!nilaiUraian) {
+            alert("Uraian tugas wajib diisi");
+            return;
+          }
+          if (!nilaiOutput) {
+            alert("Output wajib diisi");
+            return;
+          }
+          if (!nilaiAlamat) {
+            alert("Alamat wajib diisi");
+            return;
+          }
+        }
 
         const form = new FormData();
         form.append("nama", userLogin.nama);
         form.append("nip", userLogin.nip);
-        form.append("jenis", "WFO");
+        form.append("jenis", jenis);
         form.append("status", status);
         form.append("jam", jamSekarang);
         form.append("foto", fotoBase64);
+        form.append("uraian_tugas", nilaiUraian);
+        form.append("output", nilaiOutput);
+        form.append("alamat", nilaiAlamat);
 
         const res = await fetch(API, {
           method: "POST",
@@ -333,64 +450,69 @@
     }
 
     function realtime() {
-  if (realtimeStarted) return;
-  realtimeStarted = true;
+      if (realtimeStarted) return;
+      realtimeStarted = true;
 
-  setInterval(() => {
-    const now = new Date();
+      setInterval(() => {
+        const validSession = getSession();
+        if (!validSession) {
+          alert("Session login habis. Silakan login kembali.");
+          logout();
+          return;
+        }
 
-    const jamLengkap = now.toLocaleTimeString("id-ID", {
-      hour12: false,
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      timeZone: "Asia/Jakarta"
-    });
+        const now = new Date();
 
-    const jamShort = jamLengkap.substring(0, 5);
-    jamText.innerText = jamLengkap;
+        const jamLengkap = now.toLocaleTimeString("id-ID", {
+          hour12: false,
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          timeZone: "Asia/Jakarta"
+        });
 
-    const jamMasuk = (config.jam_masuk || "07:30").trim();
-    const batasMasuk = (config.batas_masuk || "08:00").trim();
+        const jamShort = jamLengkap.substring(0, 5);
+        jamText.innerText = jamLengkap;
 
-    console.log("jamShort =", jamShort);
-    console.log("jamMasuk =", jamMasuk);
-    console.log("batasMasuk =", batasMasuk);
+        const jamMasuk = (config.jam_masuk || "07:30").trim();
+        const batasMasuk = (config.batas_masuk || "08:00").trim();
 
-    const statusSekarang = jamShort < batasMasuk ? "MASUK" : "PULANG";
+        const statusSekarang = jamShort < batasMasuk ? "MASUK" : "PULANG";
 
-    if (statusSekarang === "MASUK") {
-      statusText.innerText = "🟢 MASUK";
-      document.body.className = "masuk";
-    } else {
-      statusText.innerText = "🔴 PULANG";
-      document.body.className = "pulang";
+        if (statusSekarang === "MASUK") {
+          statusText.innerText = "🟢 MASUK";
+          document.body.className = "masuk";
+        } else {
+          statusText.innerText = "🔴 PULANG";
+          document.body.className = "pulang";
+        }
+
+        updateFormPulang(statusSekarang);
+
+        if (jamShort > jamMasuk && jamShort < batasMasuk) {
+          const [h1, m1] = jamShort.split(":").map(Number);
+          const [h2, m2] = jamMasuk.split(":").map(Number);
+          const selisih = (h1 * 60 + m1) - (h2 * 60 + m2);
+
+          terlambatText.innerText = "TERLAMBAT " + selisih + " MENIT";
+
+          const hari = now.getDay();
+          const jamPulang = hari === 5
+            ? (config.jam_pulang_jumat || "16:30").trim()
+            : (config.jam_pulang_senin_kamis || "16:00").trim();
+
+          const [hp, mp] = jamPulang.split(":").map(Number);
+          const total = (hp * 60 + mp) + selisih;
+          const hh = String(Math.floor(total / 60)).padStart(2, "0");
+          const mm = String(total % 60).padStart(2, "0");
+
+          rekomendasiText.innerText = "Pulang: " + hh + ":" + mm;
+        } else {
+          terlambatText.innerText = "";
+          rekomendasiText.innerText = "";
+        }
+      }, 1000);
     }
-
-    if (jamShort > jamMasuk && jamShort < batasMasuk) {
-      const [h1, m1] = jamShort.split(":").map(Number);
-      const [h2, m2] = jamMasuk.split(":").map(Number);
-      const selisih = (h1 * 60 + m1) - (h2 * 60 + m2);
-
-      terlambatText.innerText = "TERLAMBAT " + selisih + " MENIT";
-
-      const hari = now.getDay();
-      const jamPulang = hari === 5
-        ? (config.jam_pulang_jumat || "16:30").trim()
-        : (config.jam_pulang_senin_kamis || "16:00").trim();
-
-      const [hp, mp] = jamPulang.split(":").map(Number);
-      const total = (hp * 60 + mp) + selisih;
-      const hh = String(Math.floor(total / 60)).padStart(2, "0");
-      const mm = String(total % 60).padStart(2, "0");
-
-      rekomendasiText.innerText = "Pulang: " + hh + ":" + mm;
-    } else {
-      terlambatText.innerText = "";
-      rekomendasiText.innerText = "";
-    }
-  }, 1000);
-}
 
     initApp();
   </script>
