@@ -1,15 +1,15 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Absensi</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      text-align: center;
       margin: 0;
       padding: 20px;
+      text-align: center;
       transition: background 0.3s ease;
     }
 
@@ -23,24 +23,39 @@
       color: white;
     }
 
-    #loginBox, #absenBox {
-      max-width: 500px;
+    .container {
+      max-width: 560px;
       margin: 0 auto;
     }
 
-    select, input, button, textarea {
-      width: 90%;
-      max-width: 400px;
-      padding: 15px;
-      font-size: 18px;
-      margin: 10px 0;
-      border-radius: 10px;
-      box-sizing: border-box;
+    h1, h2, h3, p {
+      margin: 8px 0;
     }
 
-    input, select, textarea {
+    .field {
+      margin: 10px 0;
+      text-align: left;
+    }
+
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 6px;
+      font-size: 16px;
+    }
+
+    input, select, textarea, button {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 14px;
+      font-size: 17px;
+      border-radius: 10px;
       border: 1px solid #ccc;
-      color: black;
+    }
+
+    input[readonly] {
+      background: #f1f1f1;
+      color: #333;
     }
 
     textarea {
@@ -50,126 +65,150 @@
 
     button {
       border: none;
-      cursor: pointer;
       font-weight: bold;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    .btn-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+      margin-top: 12px;
     }
 
     video, img {
-      width: 90%;
-      max-width: 400px;
+      width: 100%;
+      max-width: 420px;
       border-radius: 12px;
-      margin-top: 10px;
       background: #000;
-    }
-
-    #statusText {
-      font-size: 32px;
-      margin-bottom: 5px;
-    }
-
-    #jamText {
-      font-size: 24px;
-      margin-top: 0;
+      margin-top: 10px;
     }
 
     .info {
-      font-size: 16px;
-      margin-top: 8px;
-      opacity: 0.95;
+      margin-top: 10px;
       white-space: pre-wrap;
       word-break: break-word;
+      font-size: 15px;
     }
 
-    #jamMasukUser,
-    #jamPulangUser {
-      font-size: 18px;
-      font-weight: bold;
-      margin-bottom: 8px;
-    }
-
-    #networkInfo {
+    .small {
       font-size: 14px;
-      margin-bottom: 10px;
+      opacity: 0.95;
+    }
+
+    #networkInfo, #jamText {
       font-weight: bold;
+    }
+
+    #statusBox {
+      margin: 16px 0;
+      padding: 14px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.15);
     }
   </style>
 </head>
 <body>
+  <div class="container">
+    <h1 id="judulAbsen">ABSEN MASUK</h1>
+    <div id="networkInfo"></div>
 
-  <h2>ABSENSI</h2>
-  <div id="networkInfo"></div>
-
-  <div id="loginBox">
-    <select id="loginNama">
-      <option value="">-- Pilih Nama --</option>
-    </select>
-    <input type="password" id="pin" placeholder="PIN">
-    <button onclick="login()">LOGIN</button>
-    <div class="info" id="loginInfo"></div>
-  </div>
-
-  <div id="absenBox" style="display:none;">
-    <h3 id="namaUser"></h3>
-    <div id="jamMasukUser">Jam masuk: 00.00</div>
-    <div id="jamPulangUser">Jam pulang: 00.00</div>
-
-    <select id="jenisAbsen">
-      <option value="WFO" selected>WFO</option>
-      <option value="DL">DL</option>
-      <option value="IJIN">IJIN</option>
-      <option value="SAKIT">SAKIT</option>
-      <option value="WFA">WFA</option>
-    </select>
-
-    <div id="formPulang" style="display:none;">
-      <textarea id="uraianTugas" placeholder="Uraian tugas"></textarea>
-      <textarea id="outputKerja" placeholder="Output"></textarea>
-      <textarea id="alamatKerja" placeholder="Alamat"></textarea>
+    <div id="statusBox">
+      <h2 id="statusText">🟢 MASUK</h2>
+      <div id="jamText">00.00.00</div>
+      <div class="small" id="infoBatas"></div>
     </div>
 
-    <h2 id="statusText"></h2>
-    <h3 id="jamText"></h3>
+    <div class="field">
+      <label for="nama">NAMA</label>
+      <select id="nama">
+        <option value="">-- Pilih Nama --</option>
+      </select>
+    </div>
 
+    <div class="field">
+      <label for="nip">NIP</label>
+      <input type="text" id="nip" readonly />
+    </div>
+
+    <div class="field">
+      <label for="jenisAbsen">JENIS ABSEN</label>
+      <select id="jenisAbsen">
+        <option value="WFO" selected>WFO</option>
+        <option value="WFA">WFA</option>
+        <option value="WFH">WFH</option>
+        <option value="CUTI">CUTI</option>
+        <option value="DL">DL</option>
+        <option value="SAKIT">SAKIT</option>
+        <option value="IJIN">IJIN</option>
+      </select>
+    </div>
+
+    <div id="formPulang" style="display:none;">
+      <div class="field">
+        <label for="jabatan">JABATAN</label>
+        <input type="text" id="jabatan" readonly />
+      </div>
+
+      <div class="field">
+        <label for="atasan">ATASAN</label>
+        <input type="text" id="atasan" readonly />
+      </div>
+
+      <div class="field">
+        <label for="uraianTugas">URAIAN TUGAS</label>
+        <textarea id="uraianTugas" placeholder="Isi uraian tugas"></textarea>
+      </div>
+
+      <div class="field">
+        <label for="outputKerja">OUTPUT</label>
+        <textarea id="outputKerja" placeholder="Isi output pekerjaan"></textarea>
+      </div>
+
+      <div class="field">
+        <label for="alamat">ALAMAT</label>
+        <textarea id="alamat" placeholder="Isi alamat"></textarea>
+      </div>
+    </div>
+
+    <h3>AMBIL SELFIE</h3>
     <video id="video" autoplay playsinline></video>
-    <img id="preview" style="display:none;" alt="Preview Foto">
+    <img id="preview" alt="Preview Foto" style="display:none;" />
 
-    <br>
-    <button onclick="ambilFoto()">📸 Ambil Foto</button>
-    <button onclick="kirimAbsen()">✅ Kirim</button>
-    <button onclick="ulangFoto()">🔄 Ulang</button>
-    <button onclick="logout()">Logout</button>
+    <div class="btn-row">
+      <button type="button" onclick="ambilFoto()">AMBIL FOTO</button>
+      <button type="button" onclick="ulangFoto()">ULANG</button>
+      <button type="button" onclick="kirimAbsen()">KIRIM</button>
+    </div>
 
     <div class="info" id="submitInfo"></div>
   </div>
 
   <script>
     const API = "https://script.google.com/macros/s/AKfycbxl0fJC2790vwN9DYnr6xCXW_BBuMAIP0M7btnF4SIpwzAw4dV1hTMDP1f6k652sp4/exec";
-    const SESSION_MS = 10 * 60 * 1000;
+    const SESSION_MS = 5 * 60 * 1000;
 
     let pegawai = [];
     let config = {};
-    let jamAbsensiHariIni = {};
-    let userLogin = null;
     let fotoBase64 = null;
-    let realtimeStarted = false;
+    let sessionTimer = null;
 
-    const loginNama = document.getElementById("loginNama");
-    const pin = document.getElementById("pin");
-    const loginBox = document.getElementById("loginBox");
-    const absenBox = document.getElementById("absenBox");
-    const namaUser = document.getElementById("namaUser");
-    const jamMasukUser = document.getElementById("jamMasukUser");
-    const jamPulangUser = document.getElementById("jamPulangUser");
+    const nama = document.getElementById("nama");
+    const nip = document.getElementById("nip");
+    const jabatan = document.getElementById("jabatan");
+    const atasan = document.getElementById("atasan");
     const jenisAbsen = document.getElementById("jenisAbsen");
-    const formPulang = document.getElementById("formPulang");
     const uraianTugas = document.getElementById("uraianTugas");
     const outputKerja = document.getElementById("outputKerja");
-    const alamatKerja = document.getElementById("alamatKerja");
+    const alamat = document.getElementById("alamat");
+    const formPulang = document.getElementById("formPulang");
+    const judulAbsen = document.getElementById("judulAbsen");
     const statusText = document.getElementById("statusText");
     const jamText = document.getElementById("jamText");
+    const infoBatas = document.getElementById("infoBatas");
     const video = document.getElementById("video");
     const preview = document.getElementById("preview");
-    const loginInfo = document.getElementById("loginInfo");
     const submitInfo = document.getElementById("submitInfo");
     const networkInfo = document.getElementById("networkInfo");
 
@@ -180,24 +219,91 @@
     window.addEventListener("online", updateNetworkInfo);
     window.addEventListener("offline", updateNetworkInfo);
 
+    function getConfigTime(key, fallback) {
+      const val = String(config[key] || "").trim();
+      return /^\d{2}:\d{2}$/.test(val) ? val : fallback;
+    }
+
+    function getStatusSekarang() {
+      const now = new Date();
+      const jamShort = now.toLocaleTimeString("id-ID", {
+        hour12: false,
+        hour: "2-digit",
+        minute: "2-digit",
+        timeZone: "Asia/Jakarta"
+      });
+
+      const batasMasuk = getConfigTime("batas_masuk", "12:00");
+      return jamShort < batasMasuk ? "MASUK" : "PULANG";
+    }
+
+    function updateTampilanStatus() {
+      const now = new Date();
+      const jamLengkap = now.toLocaleTimeString("id-ID", {
+        hour12: false,
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        timeZone: "Asia/Jakarta"
+      });
+
+      const batasMasuk = getConfigTime("batas_masuk", "12:00");
+      const status = getStatusSekarang();
+
+      jamText.innerText = jamLengkap.replace(/:/g, ".");
+      infoBatas.innerText = "Batas masuk: " + batasMasuk.replace(":", ".");
+
+      if (status === "MASUK") {
+        judulAbsen.innerText = "ABSEN MASUK";
+        statusText.innerText = "🟢 MASUK";
+        document.body.className = "masuk";
+        formPulang.style.display = "none";
+        clearFormPulang();
+      } else {
+        judulAbsen.innerText = "ABSEN PULANG";
+        statusText.innerText = "🔴 PULANG";
+        document.body.className = "pulang";
+        formPulang.style.display = "block";
+      }
+    }
+
+    function clearFormPulang() {
+      uraianTugas.value = "";
+      outputKerja.value = "";
+      alamat.value = "";
+    }
+
+    function isiDataPegawai() {
+      const selectedNama = nama.value;
+      const p = pegawai.find(x => x.nama === selectedNama);
+
+      if (!p) {
+        nip.value = "";
+        jabatan.value = "";
+        atasan.value = "";
+        return;
+      }
+
+      nip.value = p.nip || "";
+      jabatan.value = p.jabatan || "";
+      atasan.value = p.atasan || "";
+      resetSessionTimer();
+    }
+
     async function initApp() {
       try {
         updateNetworkInfo();
-        loginInfo.innerText = "Memuat data pegawai...";
+        submitInfo.innerText = "Memuat data pegawai...";
 
         const res = await fetch(API, { cache: "no-store" });
-        if (!res.ok) {
-          throw new Error("Gagal menghubungi server. HTTP " + res.status);
-        }
+        if (!res.ok) throw new Error("HTTP " + res.status);
 
         const text = await res.text();
-        console.log("GET RESPONSE RAW:", text);
-
         let data;
         try {
           data = JSON.parse(text);
         } catch (e) {
-          throw new Error("Response API bukan JSON: " + text.substring(0, 200));
+          throw new Error("Response bukan JSON: " + text.substring(0, 200));
         }
 
         if (data.result === "error") {
@@ -206,29 +312,24 @@
 
         pegawai = data.pegawai || [];
         config = data.setting || {};
-        jamAbsensiHariIni = data.jamAbsensiHariIni || {};
 
-        console.log("DEBUG GET:", data.debug || {});
-        console.log("JAM ABSENSI HARI INI:", jamAbsensiHariIni);
-
-        loginNama.innerHTML = '<option value="">-- Pilih Nama --</option>';
-
+        nama.innerHTML = '<option value="">-- Pilih Nama --</option>';
         pegawai.forEach(p => {
           const o = document.createElement("option");
           o.value = p.nama;
           o.textContent = p.nama;
-          o.dataset.nip = p.nip;
-          o.dataset.pin = p.pin;
-          loginNama.appendChild(o);
+          nama.appendChild(o);
         });
 
-        loginInfo.innerText = "";
-        loadUser();
+        submitInfo.innerText = "";
+        updateTampilanStatus();
+        startRealtime();
         startCamera();
+        initSessionAutoRefresh();
 
       } catch (err) {
         console.error(err);
-        loginInfo.innerText = "Gagal memuat data: " + err.message;
+        submitInfo.innerText = "Gagal memuat data: " + err.message;
         alert("Gagal memuat data:\n" + err.message);
       }
     }
@@ -246,98 +347,8 @@
       }
     }
 
-    function saveSession(user) {
-      const payload = {
-        user: user,
-        expiredAt: Date.now() + SESSION_MS
-      };
-      localStorage.setItem("session_absen", JSON.stringify(payload));
-    }
-
-    function getSession() {
-      const raw = localStorage.getItem("session_absen");
-      if (!raw) return null;
-
-      try {
-        const session = JSON.parse(raw);
-        if (!session.expiredAt || Date.now() > session.expiredAt) {
-          localStorage.removeItem("session_absen");
-          return null;
-        }
-        return session.user;
-      } catch (e) {
-        localStorage.removeItem("session_absen");
-        return null;
-      }
-    }
-
-    function refreshSession() {
-      if (!userLogin) return;
-      saveSession(userLogin);
-    }
-
-    function login() {
-      const selected = loginNama.selectedOptions[0];
-
-      if (!selected || !selected.value) {
-        alert("Pilih nama terlebih dahulu");
-        return;
-      }
-
-      if (pin.value !== selected.dataset.pin) {
-        alert("PIN salah");
-        return;
-      }
-
-      userLogin = {
-        nama: selected.value,
-        nip: selected.dataset.nip
-      };
-
-      saveSession(userLogin);
-      masuk();
-    }
-
-    function loadUser() {
-      const sessionUser = getSession();
-      if (sessionUser) {
-        userLogin = sessionUser;
-        masuk();
-      }
-    }
-
-    function updateJamAbsensiUser() {
-      if (!userLogin) {
-        jamMasukUser.innerText = "Jam masuk: 00.00";
-        jamPulangUser.innerText = "Jam pulang: 00.00";
-        return;
-      }
-
-      const data = jamAbsensiHariIni[userLogin.nama] || {
-        masuk: "00:00",
-        pulang: "00:00"
-      };
-
-      jamMasukUser.innerText = "Jam masuk: " + String(data.masuk || "00:00").replace(":", ".");
-      jamPulangUser.innerText = "Jam pulang: " + String(data.pulang || "00:00").replace(":", ".");
-    }
-
-    function masuk() {
-      loginBox.style.display = "none";
-      absenBox.style.display = "block";
-      namaUser.innerText = userLogin.nama;
-      updateJamAbsensiUser();
-      realtime();
-      refreshSession();
-    }
-
-    function logout() {
-      localStorage.removeItem("session_absen");
-      location.reload();
-    }
-
     function ambilFoto() {
-      refreshSession();
+      resetSessionTimer();
 
       if (!video.srcObject) {
         alert("Kamera belum siap");
@@ -359,7 +370,7 @@
     }
 
     function ulangFoto() {
-      refreshSession();
+      resetSessionTimer();
       fotoBase64 = null;
       preview.src = "";
       preview.style.display = "none";
@@ -367,33 +378,43 @@
       submitInfo.innerText = "";
     }
 
-    function updateFormPulang(statusSekarang) {
-      if (statusSekarang === "PULANG") {
-        formPulang.style.display = "block";
-      } else {
-        formPulang.style.display = "none";
-        uraianTugas.value = "";
-        outputKerja.value = "";
-        alamatKerja.value = "";
-      }
+    function initSessionAutoRefresh() {
+      resetSessionTimer();
+
+      ["click", "change", "input", "keydown", "touchstart"].forEach(evt => {
+        document.addEventListener(evt, resetSessionTimer, { passive: true });
+      });
     }
 
-    function getConfigTime(key, fallback) {
-      const val = String(config[key] || "").trim();
-      return /^\d{2}:\d{2}$/.test(val) ? val : fallback;
+    function resetSessionTimer() {
+      clearTimeout(sessionTimer);
+      sessionTimer = setTimeout(() => {
+        alert("Session habis karena tidak submit dalam 5 menit. Halaman akan di-refresh.");
+        location.reload();
+      }, SESSION_MS);
+    }
+
+    function startRealtime() {
+      updateTampilanStatus();
+      setInterval(updateTampilanStatus, 1000);
     }
 
     async function kirimAbsen() {
       try {
-        refreshSession();
+        resetSessionTimer();
 
         if (!navigator.onLine) {
-          alert("Perangkat sedang offline. Tidak bisa kirim absensi.");
+          alert("Perangkat sedang offline");
           return;
         }
 
-        if (!userLogin) {
-          alert("Silakan login dulu");
+        if (!nama.value) {
+          alert("Pilih nama terlebih dahulu");
+          return;
+        }
+
+        if (!nip.value) {
+          alert("NIP belum terisi");
           return;
         }
 
@@ -402,7 +423,24 @@
           return;
         }
 
-        submitInfo.innerText = "Mengirim absen...";
+        const status = getStatusSekarang();
+
+        if (status === "PULANG") {
+          if (!uraianTugas.value.trim()) {
+            alert("Uraian tugas wajib diisi");
+            return;
+          }
+          if (!outputKerja.value.trim()) {
+            alert("Output wajib diisi");
+            return;
+          }
+          if (!alamat.value.trim()) {
+            alert("Alamat wajib diisi");
+            return;
+          }
+        }
+
+        submitInfo.innerText = "Mengirim absensi...";
 
         const jamSekarang = new Date().toLocaleTimeString("id-ID", {
           hour12: false,
@@ -411,38 +449,18 @@
           timeZone: "Asia/Jakarta"
         });
 
-        const status = statusText.innerText.includes("MASUK") ? "MASUK" : "PULANG";
-        const jenis = jenisAbsen.value || "WFO";
-
-        const nilaiUraian = uraianTugas.value.trim();
-        const nilaiOutput = outputKerja.value.trim();
-        const nilaiAlamat = alamatKerja.value.trim();
-
-        if (status === "PULANG") {
-          if (!nilaiUraian) {
-            alert("Uraian tugas wajib diisi");
-            return;
-          }
-          if (!nilaiOutput) {
-            alert("Output wajib diisi");
-            return;
-          }
-          if (!nilaiAlamat) {
-            alert("Alamat wajib diisi");
-            return;
-          }
-        }
-
         const form = new FormData();
-        form.append("nama", userLogin.nama);
-        form.append("nip", userLogin.nip);
-        form.append("jenis", jenis);
+        form.append("nama", nama.value);
+        form.append("nip", nip.value);
+        form.append("jenis", jenisAbsen.value || "WFO");
         form.append("status", status);
         form.append("jam", jamSekarang);
         form.append("foto", fotoBase64);
-        form.append("uraian_tugas", nilaiUraian);
-        form.append("output", nilaiOutput);
-        form.append("alamat", nilaiAlamat);
+        form.append("jabatan", jabatan.value || "");
+        form.append("atasan", atasan.value || "");
+        form.append("uraian_tugas", uraianTugas.value.trim());
+        form.append("output", outputKerja.value.trim());
+        form.append("alamat", alamat.value.trim());
 
         const res = await fetch(API, {
           method: "POST",
@@ -450,13 +468,9 @@
           cache: "no-store"
         });
 
-        if (!res.ok) {
-          throw new Error("Gagal menghubungi server. HTTP " + res.status);
-        }
+        if (!res.ok) throw new Error("HTTP " + res.status);
 
         const text = await res.text();
-        console.log("POST RESPONSE RAW:", text);
-
         let data;
         try {
           data = JSON.parse(text);
@@ -468,14 +482,8 @@
           throw new Error(data.message || "Terjadi kesalahan");
         }
 
-        console.log("DEBUG POST:", data.debug || {});
         submitInfo.innerText = "Absensi berhasil";
-
-        alert(
-          "Absensi berhasil\n\n" +
-          JSON.stringify(data.debug || {}, null, 2)
-        );
-
+        alert("Absensi berhasil");
         location.reload();
 
       } catch (err) {
@@ -485,45 +493,7 @@
       }
     }
 
-    function realtime() {
-      if (realtimeStarted) return;
-      realtimeStarted = true;
-
-      setInterval(() => {
-        const validSession = getSession();
-        if (!validSession) {
-          alert("Session login habis. Silakan login kembali.");
-          logout();
-          return;
-        }
-
-        const now = new Date();
-
-        const jamLengkap = now.toLocaleTimeString("id-ID", {
-          hour12: false,
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit",
-          timeZone: "Asia/Jakarta"
-        });
-
-        const jamShort = jamLengkap.substring(0, 5);
-        jamText.innerText = jamLengkap.replace(/:/g, ".");
-
-        const batasMasuk = getConfigTime("batas_masuk", "12:00");
-        const statusSekarang = jamShort < batasMasuk ? "MASUK" : "PULANG";
-
-        if (statusSekarang === "MASUK") {
-          statusText.innerText = "🟢 MASUK";
-          document.body.className = "masuk";
-        } else {
-          statusText.innerText = "🔴 PULANG";
-          document.body.className = "pulang";
-        }
-
-        updateFormPulang(statusSekarang);
-      }, 1000);
-    }
+    nama.addEventListener("change", isiDataPegawai);
 
     updateNetworkInfo();
     initApp();
