@@ -2,204 +2,326 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Absensi</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Absensi KPU Kota Malang</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
+    :root {
+      --bg-masuk: #15834f;
+      --bg-pulang: #c73d3d;
+      --card: rgba(255, 255, 255, 0.16);
+      --input-bg: #ffffff;
+      --input-text: #1f2937;
+      --label: #ffffff;
+      --muted: rgba(255,255,255,0.95);
+      --warning: #fff3cd;
+      --shadow: 0 8px 20px rgba(0,0,0,0.18);
+      --radius: 18px;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
       margin: 0;
-      padding: 20px;
-      text-align: center;
+      padding: 0;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      padding: 16px;
+      color: white;
       transition: background 0.3s ease;
     }
 
     body.masuk {
-      background: #198754;
-      color: white;
+      background: var(--bg-masuk);
     }
 
     body.pulang {
-      background: #dc3545;
-      color: white;
+      background: var(--bg-pulang);
     }
 
     .container {
-      max-width: 580px;
+      width: 100%;
+      max-width: 620px;
       margin: 0 auto;
     }
 
-    h1, h2, h3, p {
-      margin: 8px 0;
+    .page-title {
+      font-size: 34px;
+      line-height: 1.2;
+      font-weight: 800;
+      text-align: center;
+      margin: 8px 0 10px;
+      letter-spacing: 0.3px;
     }
 
-    .field {
-      margin: 10px 0;
-      text-align: left;
+    .online-text {
+      text-align: center;
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 18px;
+      color: white;
     }
 
-    label {
-      display: block;
-      font-weight: bold;
-      margin-bottom: 6px;
-      font-size: 16px;
+    .status-card {
+      background: var(--card);
+      border-radius: 24px;
+      padding: 20px 18px;
+      box-shadow: var(--shadow);
+      text-align: center;
+      margin-bottom: 18px;
     }
 
-    input, select, textarea, button {
-      width: 100%;
-      box-sizing: border-box;
-      padding: 14px;
-      font-size: 17px;
-      border-radius: 10px;
-      border: 1px solid #ccc;
+    .status-main {
+      font-size: 32px;
+      font-weight: 800;
+      line-height: 1.2;
+      margin-bottom: 10px;
     }
 
-    input[readonly] {
-      background: #f1f1f1;
-      color: #333;
+    .clock-text {
+      font-size: 25px;
+      font-weight: 800;
+      margin-bottom: 10px;
+      letter-spacing: 1px;
     }
 
-    textarea {
-      min-height: 90px;
-      resize: vertical;
-    }
-
-    button {
-      border: none;
-      font-weight: bold;
-      cursor: pointer;
-      margin-top: 10px;
-    }
-
-    .btn-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 10px;
-      margin-top: 12px;
-    }
-
-    video, img {
-      width: 100%;
-      max-width: 420px;
-      border-radius: 12px;
-      background: #000;
-      margin-top: 10px;
-    }
-
-    .info {
-      margin-top: 10px;
+    .warning-text {
+      font-size: 20px;
+      line-height: 1.45;
+      font-weight: 800;
+      color: var(--warning);
+      min-height: 30px;
       white-space: pre-wrap;
-      word-break: break-word;
-      font-size: 15px;
     }
 
-    .small {
-      font-size: 14px;
-      opacity: 0.98;
-      margin-top: 4px;
-    }
-
-    .warning {
-      font-size: 15px;
-      font-weight: bold;
+    .section-card {
+      background: transparent;
+      border-radius: 20px;
       margin-top: 8px;
     }
 
-    #networkInfo, #jamText {
-      font-weight: bold;
+    .field {
+      margin-bottom: 18px;
+      text-align: left;
     }
 
-    #statusBox {
-      margin: 16px 0;
-      padding: 14px;
-      border-radius: 12px;
-      background: rgba(255,255,255,0.15);
+    .field label {
+      display: block;
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--label);
+      margin-bottom: 10px;
     }
 
-    #warningTerlambat {
-      color: #fff3cd;
+    .field input,
+    .field select,
+    .field textarea {
+      width: 100%;
+      border: 3px solid rgba(0,0,0,0.25);
+      border-radius: 22px;
+      background: var(--input-bg);
+      color: var(--input-text);
+      padding: 20px 22px;
+      font-size: 24px;
+      line-height: 1.35;
+      outline: none;
+      box-shadow: inset 0 1px 2px rgba(0,0,0,0.04);
     }
 
-    #rekomendasiPulang {
+    .field input[readonly] {
+      background: #f2f2f2;
+      color: #333;
+    }
+
+    .field textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+
+    .sub-title {
+      font-size: 28px;
+      font-weight: 800;
+      text-align: center;
+      margin: 24px 0 14px;
+    }
+
+    .camera-box {
+      width: 100%;
+      background: rgba(255,255,255,0.12);
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      padding: 10px;
+    }
+
+    video, img {
+      display: block;
+      width: 100%;
+      border-radius: 18px;
+      background: #111;
+      min-height: 240px;
+      object-fit: cover;
+    }
+
+    .btn-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    button {
+      width: 100%;
+      border: none;
+      border-radius: 22px;
+      padding: 20px 18px;
+      font-size: 28px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: var(--shadow);
+    }
+
+    .btn-primary {
+      background: #ffffff;
+      color: #111827;
+    }
+
+    .btn-secondary {
+      background: #facc15;
+      color: #111827;
+    }
+
+    .btn-success {
+      background: #0f172a;
       color: #ffffff;
+    }
+
+    .submit-info {
+      margin-top: 18px;
+      text-align: center;
+      font-size: 20px;
+      font-weight: 700;
+      line-height: 1.5;
+      white-space: pre-wrap;
+    }
+
+    .helper-text {
+      text-align: center;
+      font-size: 18px;
+      color: var(--muted);
+      line-height: 1.5;
+      margin-top: 8px;
+    }
+
+    @media (min-width: 640px) {
+      body {
+        padding: 24px;
+      }
+
+      .btn-grid {
+        grid-template-columns: 1fr 1fr 1fr;
+      }
+
+      .field label {
+        font-size: 22px;
+      }
+
+      .field input,
+      .field select,
+      .field textarea {
+        font-size: 22px;
+      }
     }
   </style>
 </head>
-<body>
+<body class="masuk">
   <div class="container">
-    <h1 id="judulAbsen">ABSEN MASUK</h1>
-    <div id="networkInfo"></div>
+    <div class="page-title">ABSENSI KPU KOTA MALANG</div>
+    <div class="online-text" id="networkInfo">Online</div>
 
-    <div id="statusBox">
-      <h2 id="statusText">🟢 MASUK</h2>
-      <div id="jamText">00.00.00</div>
-      <div class="small" id="infoBatas"></div>
-      <div class="warning" id="warningTerlambat"></div>
-      <div class="small" id="rekomendasiPulang"></div>
+    <div class="status-card">
+      <div class="status-main" id="statusText">🟢 MASUK</div>
+      <div class="clock-text" id="jamText">00.00.00</div>
+      <div class="warning-text" id="warningTerlambat"></div>
     </div>
 
-    <div class="field">
-      <label for="nama">NAMA</label>
-      <select id="nama">
-        <option value="">-- Pilih Nama --</option>
-      </select>
-    </div>
-
-    <div class="field">
-      <label for="nip">NIP</label>
-      <input type="text" id="nip" readonly />
-    </div>
-
-    <div class="field">
-      <label for="jenisAbsen">JENIS ABSEN</label>
-      <select id="jenisAbsen">
-        <option value="WFO" selected>WFO</option>
-        <option value="WFA">WFA</option>
-        <option value="WFH">WFH</option>
-        <option value="CUTI">CUTI</option>
-        <option value="DL">DL</option>
-        <option value="SAKIT">SAKIT</option>
-        <option value="IJIN">IJIN</option>
-      </select>
-    </div>
-
-    <div id="formPulang" style="display:none;">
+    <div class="section-card">
       <div class="field">
-        <label for="jabatan">JABATAN</label>
-        <input type="text" id="jabatan" readonly />
+        <label for="nama">NAMA</label>
+        <select id="nama">
+          <option value="">-- Pilih Nama --</option>
+        </select>
       </div>
 
       <div class="field">
-        <label for="atasan">ATASAN</label>
-        <input type="text" id="atasan" readonly />
+        <label for="nip">NIP</label>
+        <input type="text" id="nip" readonly />
       </div>
 
       <div class="field">
-        <label for="uraianTugas">URAIAN TUGAS</label>
-        <textarea id="uraianTugas" placeholder="Isi uraian tugas"></textarea>
+        <label for="jenisAbsen">JENIS ABSEN</label>
+        <select id="jenisAbsen">
+          <option value="WFO" selected>WFO</option>
+          <option value="WFA">WFA</option>
+          <option value="WFH">WFH</option>
+          <option value="CUTI">CUTI</option>
+          <option value="DL">DL</option>
+          <option value="SAKIT">SAKIT</option>
+          <option value="IJIN">IJIN</option>
+        </select>
       </div>
 
-      <div class="field">
-        <label for="outputKerja">OUTPUT</label>
-        <textarea id="outputKerja" placeholder="Isi output pekerjaan"></textarea>
+      <div id="formPulang" style="display:none;">
+        <div class="field">
+          <label for="jabatan">JABATAN</label>
+          <input type="text" id="jabatan" readonly />
+        </div>
+
+        <div class="field">
+          <label for="atasan">ATASAN</label>
+          <input type="text" id="atasan" readonly />
+        </div>
+
+        <div class="field">
+          <label for="uraianTugas">URAIAN TUGAS</label>
+          <textarea id="uraianTugas" placeholder="Tulis uraian tugas di sini"></textarea>
+        </div>
+
+        <div class="field">
+          <label for="outputKerja">OUTPUT</label>
+          <textarea id="outputKerja" placeholder="Tulis output pekerjaan di sini"></textarea>
+        </div>
+
+        <div class="field">
+          <label for="alamat">ALAMAT</label>
+          <textarea id="alamat" placeholder="Tulis alamat di sini"></textarea>
+        </div>
       </div>
 
-      <div class="field">
-        <label for="alamat">ALAMAT</label>
-        <textarea id="alamat" placeholder="Isi alamat"></textarea>
+      <div class="sub-title">AMBIL SELFIE</div>
+
+      <div class="camera-box">
+        <video id="video" autoplay playsinline></video>
+        <img id="preview" alt="Preview Foto" style="display:none;" />
       </div>
+
+      <div class="helper-text">
+        Pastikan wajah terlihat jelas sebelum menekan tombol kirim.
+      </div>
+
+      <div class="btn-grid">
+        <button type="button" class="btn-primary" onclick="ambilFoto()">AMBIL FOTO</button>
+        <button type="button" class="btn-secondary" onclick="ulangFoto()">ULANG FOTO</button>
+        <button type="button" class="btn-success" onclick="kirimAbsen()">KIRIM ABSEN</button>
+      </div>
+
+      <div class="submit-info" id="submitInfo"></div>
     </div>
-
-    <h3>AMBIL SELFIE</h3>
-    <video id="video" autoplay playsinline></video>
-    <img id="preview" alt="Preview Foto" style="display:none;" />
-
-    <div class="btn-row">
-      <button type="button" onclick="ambilFoto()">AMBIL FOTO</button>
-      <button type="button" onclick="ulangFoto()">ULANG</button>
-      <button type="button" onclick="kirimAbsen()">KIRIM</button>
-    </div>
-
-    <div class="info" id="submitInfo"></div>
   </div>
 
   <script>
@@ -220,12 +342,9 @@
     const outputKerja = document.getElementById("outputKerja");
     const alamat = document.getElementById("alamat");
     const formPulang = document.getElementById("formPulang");
-    const judulAbsen = document.getElementById("judulAbsen");
     const statusText = document.getElementById("statusText");
     const jamText = document.getElementById("jamText");
-    const infoBatas = document.getElementById("infoBatas");
     const warningTerlambat = document.getElementById("warningTerlambat");
-    const rekomendasiPulang = document.getElementById("rekomendasiPulang");
     const video = document.getElementById("video");
     const preview = document.getElementById("preview");
     const submitInfo = document.getElementById("submitInfo");
@@ -253,9 +372,7 @@
     function minutesToTime(totalMinutes) {
       let h = Math.floor(totalMinutes / 60);
       let m = totalMinutes % 60;
-
       h = ((h % 24) + 24) % 24;
-
       return String(h).padStart(2, "0") + ":" + String(m).padStart(2, "0");
     }
 
@@ -293,6 +410,25 @@
       return jamShort < batasGantiForm ? "MASUK" : "PULANG";
     }
 
+    function hitungTerlambatSekarang() {
+      const jamSekarang = new Date().toLocaleTimeString("id-ID", {
+        hour12: false,
+        hour: "2-digit",
+        minute: "2-digit",
+        timeZone: "Asia/Jakarta"
+      });
+
+      const batasMasuk = getConfigTime("batas_masuk", "07:30");
+      const terlambat = timeToMinutes(jamSekarang) - timeToMinutes(batasMasuk);
+      return terlambat > 0 ? terlambat : 0;
+    }
+
+    function getRekomendasiPulang(terlambatMenit) {
+      const jamPulangResmi = getJamPulangResmi();
+      const total = timeToMinutes(jamPulangResmi) + terlambatMenit;
+      return minutesToTime(total);
+    }
+
     function clearFormPulang() {
       uraianTugas.value = "";
       outputKerja.value = "";
@@ -321,42 +457,22 @@
 
       if (status !== "MASUK") {
         warningTerlambat.innerText = "";
-        rekomendasiPulang.innerText = "";
         return;
       }
 
-      const now = new Date();
-      const jamSekarang = now.toLocaleTimeString("id-ID", {
-        hour12: false,
-        hour: "2-digit",
-        minute: "2-digit",
-        timeZone: "Asia/Jakarta"
-      });
-
-      const batasMasuk = getConfigTime("batas_masuk", "07:30");
-      const jamPulangResmi = getJamPulangResmi();
-
-      const menitSekarang = timeToMinutes(jamSekarang);
-      const menitBatasMasuk = timeToMinutes(batasMasuk);
-      const menitPulangResmi = timeToMinutes(jamPulangResmi);
-
-      const terlambat = menitSekarang - menitBatasMasuk;
+      const terlambat = hitungTerlambatSekarang();
 
       if (terlambat <= 0) {
-        warningTerlambat.innerText = "Tidak terlambat";
-        rekomendasiPulang.innerText = "Jam pulang hari ini: " + jamPulangResmi.replace(":", ".");
+        warningTerlambat.innerText = "";
         return;
       }
 
       if (terlambat > 59) {
-        warningTerlambat.innerText = "WARNING : ANDA MELEBIHI BATAS WAKTU KETERLAMBATAN.";
-        rekomendasiPulang.innerText = "";
+        warningTerlambat.innerText = "ANDA MELEBIHI BATAS WAKTU KETERLAMBATAN";
         return;
       }
 
-      const rekomendasi = minutesToTime(menitPulangResmi + terlambat);
-      warningTerlambat.innerText = "Warning: Terlambat " + terlambat + " menit";
-      rekomendasiPulang.innerText = "Rekomendasi pulang: " + rekomendasi.replace(":", ".");
+      warningTerlambat.innerText = "TERLAMBAT " + terlambat + " MENIT";
     }
 
     function updateTampilanStatus() {
@@ -370,22 +486,14 @@
       });
 
       const status = getStatusSekarang();
-      const batasMasuk = getConfigTime("batas_masuk", "07:30");
-      const batasGantiForm = getConfigTime("batas_ganti_form", "12:00");
-
       jamText.innerText = jamLengkap.replace(/:/g, ".");
-      infoBatas.innerText =
-        "Batas masuk: " + batasMasuk.replace(":", ".") +
-        " | Ganti form: " + batasGantiForm.replace(":", ".");
 
       if (status === "MASUK") {
-        judulAbsen.innerText = "ABSEN MASUK";
         statusText.innerText = "🟢 MASUK";
         document.body.className = "masuk";
         formPulang.style.display = "none";
         clearFormPulang();
       } else {
-        judulAbsen.innerText = "ABSEN PULANG";
         statusText.innerText = "🔴 PULANG";
         document.body.className = "pulang";
         formPulang.style.display = "block";
@@ -441,7 +549,11 @@
     async function startCamera() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "user" },
+          video: {
+            facingMode: "user",
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          },
           audio: false
         });
         video.srcObject = stream;
@@ -460,8 +572,8 @@
       }
 
       const canvas = document.createElement("canvas");
-      canvas.width = video.videoWidth || 400;
-      canvas.height = video.videoHeight || 300;
+      canvas.width = video.videoWidth || 720;
+      canvas.height = video.videoHeight || 1280;
 
       const ctx = canvas.getContext("2d");
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
@@ -513,7 +625,7 @@
         }
 
         if (!nama.value) {
-          alert("Pilih nama terlebih dahulu");
+          alert("Silakan pilih nama terlebih dahulu");
           return;
         }
 
@@ -523,7 +635,7 @@
         }
 
         if (!fotoBase64) {
-          alert("Ambil foto dulu");
+          alert("Silakan ambil foto terlebih dahulu");
           return;
         }
 
@@ -552,7 +664,7 @@
           }
         }
 
-        submitInfo.innerText = "Mengirim absensi...";
+        submitInfo.innerText = "Mengirim absensi... Mohon tunggu.";
 
         const jamSekarang = new Date().toLocaleTimeString("id-ID", {
           hour12: false,
@@ -595,7 +707,29 @@
         }
 
         submitInfo.innerText = "Absensi berhasil";
-        alert("Absensi berhasil");
+
+        if (status === "MASUK") {
+          const terlambat = Number(data.terlambat || 0);
+
+          if (terlambat > 0 && terlambat <= 59) {
+            const rekomendasiPulang = getRekomendasiPulang(terlambat);
+            alert(
+              "Absensi berhasil.\n" +
+              "Anda terlambat " + terlambat + " menit.\n" +
+              "Rekomendasi jam pulang " + rekomendasiPulang
+            );
+          } else if (terlambat > 59) {
+            alert(
+              "Absensi berhasil.\n" +
+              "Anda melebihi batas waktu keterlambatan."
+            );
+          } else {
+            alert("Absensi berhasil.");
+          }
+        } else {
+          alert("Absensi berhasil.");
+        }
+
         location.reload();
 
       } catch (err) {
