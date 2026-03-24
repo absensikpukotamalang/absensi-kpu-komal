@@ -418,8 +418,8 @@
         timeZone: "Asia/Jakarta"
       });
 
-      const batasMasuk = getConfigTime("batas_masuk", "07:30");
-      const terlambat = timeToMinutes(jamSekarang) - timeToMinutes(batasMasuk);
+      const jamMasukResmi = getConfigTime("jam_masuk", "07:30");
+      const terlambat = timeToMinutes(jamSekarang) - timeToMinutes(jamMasukResmi);
       return terlambat > 0 ? terlambat : 0;
     }
 
