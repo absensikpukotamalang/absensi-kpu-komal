@@ -25,6 +25,20 @@
     header h1 { font-size: 24px; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
     header p { font-size: 13px; opacity: 0.9; margin-top: 5px; }
     
+    /* STYLE UNTUK FORM LOGIN */
+    .login-wrapper {
+      display: flex; justify-content: center; align-items: center; min-height: 85vh;
+    }
+    .login-card {
+      background: white; color: var(--text-dark); padding: 30px; border-radius: 16px;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.3); width: 100%; max-width: 400px;
+      text-align: center; animation: fadeIn 0.3s ease-in-out;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+    .login-card h2 { color: var(--admin-dark); margin-bottom: 5px; font-size: 20px; }
+    .login-card p { color: #718096; font-size: 13px; margin-bottom: 20px; }
+    .error-msg { color: var(--danger); font-size: 13px; font-weight: bold; margin-top: 10px; display: none; }
+
     .nav-menu { display: flex; gap: 15px; margin-bottom: 20px; }
     .nav-item { 
       flex: 1; padding: 14px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2); 
@@ -114,7 +128,25 @@
   </div>
 
   <div class="container">
-    <div id="view-admin-main" style="display: block;">
+    
+    <div class="login-wrapper" id="view-login-gate" style="display: flex;">
+      <div class="login-card">
+        <h2>PANEL AKSES KPU</h2>
+        <p>Silakan masukkan kredensial administrator</p>
+        
+        <label style="text-align: left;">Username</label>
+        <input type="text" id="txtUsername" placeholder="Masukkan username admin..." autocomplete="off">
+        
+        <label style="text-align: left;">Password</label>
+        <input type="password" id="txtPassword" placeholder="Masukkan sandi..." onkeypress="handleLoginKeyPress(event)">
+        
+        <div class="error-msg" id="loginError">Username atau Password salah!</div>
+        
+        <button onclick="prosesValidasiLogin()" style="margin-top: 25px; background: var(--admin-dark);">MASUK SISTEM</button>
+      </div>
+    </div>
+
+    <div id="view-admin-main" style="display: none;">
       <div class="operator-badge" id="badgeOperator">Sesi Aktif Admin: System Admin</div>
 
       <div class="nav-menu">
@@ -171,7 +203,7 @@
             </thead>
             <tbody id="bodyLaporanAdmin">
               <tr>
-                <td colspan="10" class="text-center" style="color:#a0aec0; padding:20px;">Data sedang disinkronkan... Mohon tunggu...</td>
+                <td colspan="10" class="text-center" style="color:#a0aec0; padding:20px;">Data siap ditarik.</td>
               </tr>
             </tbody>
           </table>
@@ -212,17 +244,52 @@
 
     function showLoading(show) { document.getElementById('loading').style.display = show ? 'flex' : 'none'; }
 
-    async function initAdminDashboard() {
-      const kini = new Date();
-      const yyyy = kini.getFullYear();
-      const mm = String(kini.getMonth() + 1).padStart(2, '0');
-      const dd = String(kini.getDate()).padStart(2, '0');
-      document.getElementById("filterTglAwal").value = `${yyyy}-${mm}-${dd}`;
-      document.getElementById("filterBulan").value = `${yyyy}-${mm}`;
-      await muatDaftarPegawaiAdmin();
-      tarikLaporanAdmin();
+    // Fungsi Validasi Akun Login Admin
+    function prosesValidasiLogin() {
+      const userIn = document.getElementById("txtUsername").value.trim();
+      const passIn = document.getElementById("txtPassword").value.trim();
+      const errorDiv = document.getElementById("loginError");
+
+      if (userIn === "admin" && passIn === "admin2026") {
+        errorDiv.style.display = "none";
+        // Sembunyikan Gerbang Login & Tampilkan Konten Utama Admin
+        document.getElementById("view-login-gate").style.display = "none";
+        document.getElementById("view-admin-main").style.display = "block";
+        
+        // Eksekusi penyiapan data setelah login berhasil
+        aktifkanSistemUtamaAdmin();
+      } else {
+        errorDiv.style.display = "block";
+        document.getElementById("txtPassword").value = "";
+        document.getElementById("txtPassword").focus();
+      }
     }
-    window.addEventListener('DOMContentLoaded', initAdminDashboard);
+
+    function handleLoginKeyPress(e) {
+      if (e.key === "Enter") {
+        prosesValidasiLogin();
+      }
+    }
+
+    // Dipanggil hanya jika login sukses berlalu
+    async function aktifkanSistemUtamaAdmin() {
+      const kini = new Date();
+      const opsiTanggal = { timeZone: 'Asia/Jakarta', year: 'numeric', month: '2-digit', day: '2-digit' };
+      const formatter = new Intl.DateTimeFormat('en-CA', opsiTanggal);
+      const tglHariIni = formatter.format(kini);
+      
+      const opsiBulan = { timeZone: 'Asia/Jakarta', year: 'numeric', month: '2-digit' };
+      const formatterBulan = new Intl.DateTimeFormat('en-CA', opsiBulan);
+      const blnHariIni = formatterBulan.format(kini);
+
+      document.getElementById("filterTglAwal").value = tglHariIni;
+      document.getElementById("filterBulan").value = blnHariIni;
+      document.getElementById("filterType").value = "harian";
+      toggleFilterFields();
+
+      await muatDaftarPegawaiAdmin();
+      tarikLaporanAdmin(); 
+    }
 
     function switchAdminTab(target) {
       document.getElementById('panel-laporan').style.display = 'none';
@@ -326,16 +393,12 @@
           const dataDisaring = data.data.filter(item => {
             if (!item.tanggal.includes("/")) return false;
             const p = item.tanggal.split("/");
-            const thnFull = parseInt(p[2]) < 100 ? 2000 + parseInt(p[2]) : parseInt(p[2]);
+            const thnFull = p[2].length === 2 ? "20" + p[2] : p[2];
             const itemDateStr = `${thnFull}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
 
-            if (type === "harian") {
-              return itemDateStr === tglAwal;
-            } else if (type === "bulanan") {
-              return itemDateStr.startsWith(bulan);
-            } else if (type === "custom") {
-              return itemDateStr >= tglAwal && itemDateStr <= tglAkhir;
-            }
+            if (type === "harian") { return itemDateStr === tglAwal; } 
+            else if (type === "bulanan") { return itemDateStr.startsWith(bulan); } 
+            else if (type === "custom") { return itemDateStr >= tglAwal && itemDateStr <= tglAkhir; }
             return true;
           });
 
@@ -379,19 +442,15 @@
                 menitTerlambat = parseInt(item.keterangan);
                 txtMasuk = `Terlambat ${menitTerlambat} Menit`;
                 warnaMasuk = "var(--danger)";
-              } else {
-                txtMasuk = item.keterangan;
-              }
+              } else { txtMasuk = item.keterangan; }
             }
 
             if (item.jamPulang && item.jamPulang !== "-") {
               const kompensasiMenit = hitungMenitSelisih(jamPulangResmi, item.jamPulang);
               if (kompensasiMenit >= 0) {
-                txtPulang = "Tepat Waktu";
-                warnaPulang = "var(--success)";
+                txtPulang = "Tepat Waktu"; warnaPulang = "var(--success)";
               } else {
-                txtPulang = "PSW";
-                warnaPulang = "var(--danger)";
+                txtPulang = "PSW"; warnaPulang = "var(--danger)";
               }
             } else if (item.jenis === "CUTI" || item.jenis === "IJIN" || item.jenis === "SAKIT") {
               txtMasuk = "-"; txtPulang = "-";
@@ -422,7 +481,7 @@
         }
       } catch(e) { 
         console.error(e);
-        tbody.innerHTML = `<tr><td colspan="10" class="text-center" style="color:var(--danger);">Gagal memuat rekap data. Periksa kembali konfigurasi API.</td></tr>`; 
+        tbody.innerHTML = `<tr><td colspan="10" class="text-center" style="color:var(--danger);">Gagal memuat rekap data.</td></tr>`; 
       } finally { showLoading(false); }
     }
 
