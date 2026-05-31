@@ -14,6 +14,7 @@
       --success: #38a169;
       --danger: #e53e3e;
       --warning: #dd6b20;
+      --purple: #6b46c1;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -39,9 +40,9 @@
     .login-card p { color: #718096; font-size: 13px; margin-bottom: 20px; }
     .error-msg { color: var(--danger); font-size: 13px; font-weight: bold; margin-top: 10px; display: none; }
 
-    .nav-menu { display: flex; gap: 15px; margin-bottom: 20px; }
+    .nav-menu { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
     .nav-item { 
-      flex: 1; padding: 14px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2); 
+      flex: 1; min-width: 180px; padding: 14px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2); 
       border-radius: 12px; text-align: center; font-weight: bold; cursor: pointer; transition: all 0.2s; 
       font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 8px;
     }
@@ -66,22 +67,23 @@
     }
     .btn-excel:hover { background-color: #0b592e; }
 
-    .table-responsive { width: 100%; overflow-x: hidden; border: 1px solid #e2e8f0; border-radius: 12px; background: white; margin-top: 10px; }
-    table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; } 
+    .table-responsive { width: 100%; overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 12px; background: white; margin-top: 10px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; } 
     
-    th:nth-child(1), td:nth-child(1) { width: 8.5%; } 
-    th:nth-child(2), td:nth-child(2) { width: 14%; }  
-    th:nth-child(3), td:nth-child(3) { width: 20%; }  
-    th:nth-child(4), td:nth-child(4) { width: 7.5%; } 
-    th:nth-child(5), td:nth-child(5) { width: 7%; }   
-    th:nth-child(6), td:nth-child(6) { width: 7%; }   
-    th:nth-child(7), td:nth-child(7) { width: 11.5%; }
-    th:nth-child(8), td:nth-child(8) { width: 10.5%; }
-    th:nth-child(9), td:nth-child(9) { width: 7%; }   
-    th:nth-child(10), td:nth-child(10) { width: 7%; }  
+    /* Table Laporan Admin Layout */
+    .table-laporan-admin th:nth-child(1), .table-laporan-admin td:nth-child(1) { width: 8.5%; } 
+    .table-laporan-admin th:nth-child(2), .table-laporan-admin td:nth-child(2) { width: 14%; }  
+    .table-laporan-admin th:nth-child(3), .table-laporan-admin td:nth-child(3) { width: 20%; }  
+    .table-laporan-admin th:nth-child(4), .table-laporan-admin td:nth-child(4) { width: 7.5%; } 
+    .table-laporan-admin th:nth-child(5), .table-laporan-admin td:nth-child(5) { width: 7%; }   
+    .table-laporan-admin th:nth-child(6), .table-laporan-admin td:nth-child(6) { width: 7%; }   
+    .table-laporan-admin th:nth-child(7), .table-laporan-admin td:nth-child(7) { width: 11.5%; }
+    .table-laporan-admin th:nth-child(8), .table-laporan-admin td:nth-child(8) { width: 10.5%; }
+    .table-laporan-admin th:nth-child(9), .table-laporan-admin td:nth-child(9) { width: 7%; }   
+    .table-laporan-admin th:nth-child(10), .table-laporan-admin td:nth-child(10) { width: 7%; }  
 
     th { background: var(--admin-color); color: white; padding: 12px 6px; font-weight: 600; text-align: left; }
-    td { padding: 8px 6px; border-bottom: 1px solid #e2e8f0; vertical-align: middle; word-wrap: break-word; white-space: normal; } 
+    td { padding: 10px 8px; border-bottom: 1px solid #e2e8f0; vertical-align: middle; word-wrap: break-word; white-space: normal; } 
     tr:nth-child(even) { background: #f8fafc; }
     .text-center { text-align: center; }
     
@@ -111,6 +113,13 @@
       width: 30px; height: 30px; border-radius: 50%; font-weight: bold; font-size: 14px; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
     }
+
+    .meta-kinerja-box {
+      background: var(--gray-light); padding: 15px; border-radius: 10px; border-left: 5px solid var(--purple); margin-bottom: 20px; font-size: 14px; display: none;
+    }
+    .meta-kinerja-box table { width: auto; min-width: 300px; }
+    .meta-kinerja-box td { padding: 4px 8px; border: none; }
+    .meta-kinerja-box tr:nth-child(even) { background: transparent; }
 
     .view-panel { display: none; }
   </style>
@@ -151,6 +160,7 @@
 
       <div class="nav-menu">
         <div class="nav-item active" id="tab-laporan" onclick="switchAdminTab('laporan')">📊 Dashboard Laporan</div>
+        <div class="nav-item" id="tab-kinerja" onclick="switchAdminTab('kinerja')">📈 Laporan Kinerja</div>
         <div class="nav-item" id="tab-input" onclick="switchAdminTab('input')">✍️ Input Cuti / Izin Manual</div>
       </div>
 
@@ -186,7 +196,7 @@
         </div>
 
         <div class="table-responsive">
-          <table>
+          <table class="table-laporan-admin">
             <thead>
               <tr>
                 <th>Tanggal</th>
@@ -204,6 +214,54 @@
             <tbody id="bodyLaporanAdmin">
               <tr>
                 <td colspan="10" class="text-center" style="color:#a0aec0; padding:20px;">Data siap ditarik.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card view-panel" id="panel-kinerja">
+        <h3 style="color: var(--purple); border-bottom-color: #e9d8fd;">Laporan Performa Kinerja Pegawai</h3>
+        
+        <div class="filter-group">
+          <div>
+            <label for="kinerjaPegawai">Pilih Nama Pegawai</label>
+            <select id="kinerjaPegawai" onchange="bersihkanTabelKinerja()">
+              <option value="">-- Memuat Data Pegawai... --</option>
+            </select>
+          </div>
+          <div>
+            <label for="kinerjaTglAwal">Mulai Tanggal</label>
+            <input type="date" id="kinerjaTglAwal">
+          </div>
+          <div>
+            <label for="kinerjaTglAkhir">Sampai Tanggal</label>
+            <input type="date" id="kinerjaTglAkhir">
+          </div>
+        </div>
+
+        <button onclick="prosesLaporanKinerja()" style="background: var(--purple);">PROSES DATA KINERJA</button>
+
+        <div class="meta-kinerja-box" id="boxMetaKinerja">
+          <table>
+            <tr><td style="font-weight: bold; width: 100px;">Nama</td><td>: <span id="lblKinerjaNama">-</span></td></tr>
+            <tr><td style="font-weight: bold;">Jabatan</td><td>: <span id="lblKinerjaJabatan">-</span></td></tr>
+            <tr><td style="font-weight: bold;">Atasan</td><td>: <span id="lblKinerjaAtasan">-</span></td></tr>
+          </table>
+        </div>
+
+        <div class="table-responsive" style="margin-top: 15px;">
+          <table style="table-layout: auto;">
+            <thead>
+              <tr>
+                <th style="width: 15%;">Tanggal</th>
+                <th style="width: 55%;">Uraian Tugas / Aktivitas</th>
+                <th style="width: 30%;">Output Kerja / Berkas</th>
+              </tr>
+            </thead>
+            <tbody id="bodyLaporanKinerja">
+              <tr>
+                <td colspan="3" class="text-center" style="color:#a0aec0; padding:20px;">Silakan tentukan saringan data di atas lalu klik tombol proses.</td>
               </tr>
             </tbody>
           </table>
@@ -234,6 +292,7 @@
     const adminAktif = "System Admin";
     let daftarPegawaiCache = [];
     let dataLaporanSekarang = [];
+    let databaseMentahAbsen = []; // Cache penampung data respon dari server
     
     let jamKerjaSetting = {
       masukSeninKamis: "08:00",
@@ -278,6 +337,11 @@
       document.getElementById("filterTglAwal").value = tglHariIni;
       document.getElementById("filterBulan").value = blnHariIni;
       document.getElementById("filterType").value = "harian";
+      
+      // Mengisi default rentang tanggal pada form laporan kinerja
+      document.getElementById("kinerjaTglAwal").value = tglHariIni;
+      document.getElementById("kinerjaTglAkhir").value = tglHariIni;
+      
       toggleFilterFields();
 
       await muatDaftarPegawaiAdmin();
@@ -286,12 +350,19 @@
 
     function switchAdminTab(target) {
       document.getElementById('panel-laporan').style.display = 'none';
+      document.getElementById('panel-kinerja').style.display = 'none';
       document.getElementById('panel-input').style.display = 'none';
+      
       document.getElementById('tab-laporan').classList.remove('active');
+      document.getElementById('tab-kinerja').classList.remove('active');
       document.getElementById('tab-input').classList.remove('active');
+      
       if (target === 'laporan') {
         document.getElementById('panel-laporan').style.display = 'block';
         document.getElementById('tab-laporan').classList.add('active');
+      } else if (target === 'kinerja') {
+        document.getElementById('panel-kinerja').style.display = 'block';
+        document.getElementById('tab-kinerja').classList.add('active');
       } else {
         document.getElementById('panel-input').style.display = 'block';
         document.getElementById('tab-input').classList.add('active');
@@ -312,11 +383,19 @@
         const data = await res.json();
         if(data.result === "success") {
           daftarPegawaiCache = data.pegawai;
+          
           const select = document.getElementById("inputPegawai");
+          const selectKiner = document.getElementById("kinerjaPegawai");
+          
           select.innerHTML = '<option value="">-- Pilih Pegawai --</option>';
+          selectKiner.innerHTML = '<option value="">-- Pilih Pegawai --</option>';
+          
           daftarPegawaiCache.forEach(p => {
-            const opt = document.createElement("option"); opt.value = p.nip; opt.textContent = `${p.nama} (${p.nip})`;
-            select.appendChild(opt);
+            const opt1 = document.createElement("option"); opt1.value = p.nip; opt1.textContent = `${p.nama} (${p.nip})`;
+            select.appendChild(opt1);
+            
+            const opt2 = document.createElement("option"); opt2.value = p.nip; opt2.textContent = `${p.nama} (${p.nip})`;
+            selectKiner.appendChild(opt2);
           });
         }
       } catch(e) { console.error(e); }
@@ -375,6 +454,7 @@
         const data = await res.json();
         if(data.result === "success") {
           tbody.innerHTML = "";
+          databaseMentahAbsen = data.data; // Simpan di global variabel agar panel kinerja bisa akses instan tanpa fetch ulang
           
           if(data.settingJamKerja) {
             jamKerjaSetting.masukSeninKamis = data.settingJamKerja.masukSeninKamis || jamKerjaSetting.masukSeninKamis;
@@ -487,6 +567,81 @@
         console.error(e);
         tbody.innerHTML = `<tr><td colspan="10" class="text-center" style="color:var(--danger);">Gagal memuat rekap data.</td></tr>`; 
       } finally { showLoading(false); }
+    }
+
+    // =====================================================
+    // LOGIKA PEMBENTUKAN LAPORAN KINERJA PEGAWAI
+    // =====================================================
+    function bersihkanTabelKinerja() {
+      document.getElementById("boxMetaKinerja").style.display = "none";
+      document.getElementById("bodyLaporanKinerja").innerHTML = '<tr><td colspan="3" class="text-center" style="color:#a0aec0; padding:20px;">Silakan klik tombol proses untuk memperbarui data.</td></tr>';
+    }
+
+    function prosesLaporanKinerja() {
+      const nipTerpilih = document.getElementById("kinerjaPegawai").value;
+      const tglAwal = document.getElementById("kinerjaTglAwal").value;
+      const tglAkhir = document.getElementById("kinerjaTglAkhir").value;
+      const tbody = document.getElementById("bodyLaporanKinerja");
+
+      if (!nipTerpilih) { alert("Silakan pilih pegawai terlebih dahulu!"); return; }
+      if (!tglAwal || !tglAkhir) { alert("Rentang tanggal wajib ditentukan!"); return; }
+      if (tglAwal > tglAkhir) { alert("Tanggal awal tidak boleh lebih besar dari tanggal akhir!"); return; }
+
+      // Cari metadata profil pegawai dari cache
+      const profilPegawai = daftarPegawaiCache.find(p => p.nip === nipTerpilih);
+      if (profilPegawai) {
+        document.getElementById("lblKinerjaNama").innerText = profilPegawai.nama;
+        document.getElementById("lblKinerjaJabatan").innerText = profilPegawai.jabatan || "-";
+        document.getElementById("lblKinerjaAtasan").innerText = profilPegawai.atasan || "-";
+        document.getElementById("boxMetaKinerja").style.display = "block";
+      }
+
+      if (databaseMentahAbsen.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" class="text-center" style="color:var(--danger); padding:15px;">Basis data laporan kosong. Silakan muat ulang rekap di Dashboard Laporan terlebih dahulu.</td></tr>';
+        return;
+      }
+
+      // Filter data kinerja berdasarkan NIP dan rentang tanggal kustom
+      const dataKinerjaSaring = databaseMentahAbsen.filter(item => {
+        if (String(item.nip).trim() !== nipTerpilih) return false;
+        if (!item.tanggal.includes("/")) return false;
+
+        const p = item.tanggal.split("/");
+        const thnFull = p[2].length === 2 ? "20" + p[2] : p[2];
+        const itemDateStr = `${thnFull}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
+        
+        return itemDateStr >= tglAwal && itemDateStr <= tglAkhir;
+      });
+
+      // Urutkan data berdasarkan tanggal dari yang terlama
+      dataKinerjaSaring.sort((a, b) => {
+        const dateA = a.tanggal.split('/').reverse().join('');
+        const dateB = b.tanggal.split('/').reverse().join('');
+        return dateA.localeCompare(dateB);
+      });
+
+      tbody.innerHTML = "";
+
+      if (dataKinerjaSaring.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" class="text-center" style="color:var(--danger); padding:15px;">Tidak ditemukan uraian tugas atau aktivitas kerja pada rentang tanggal tersebut.</td></tr>';
+        return;
+      }
+
+      // Render baris data ke tabel laporan performa kerja
+      dataKinerjaSaring.forEach(item => {
+        const tr = document.createElement("tr");
+        
+        // Bersihkan data jika kosong/hanya tanda hubung dari sheet
+        const uraian = (item.uraian_tugas && item.uraian_tugas !== "-") ? item.uraian_tugas : `<em style="color:#a0aec0;">Tidak ada catatan aktivitas (Bukan WFO/WFH/WFA)</em>`;
+        const output = (item.output && item.output !== "-") ? item.output : `<em style="color:#a0aec0;">-</em>`;
+
+        tr.innerHTML = `
+          <td class="text-center" style="font-weight: 600; color: var(--admin-dark);">${item.tanggal}</td>
+          <td style="line-height: 1.4; white-space: pre-line;">${uraian}</td>
+          <td style="line-height: 1.4;">${output}</td>
+        `;
+        tbody.appendChild(tr);
+      });
     }
 
     function exportKeExcelLaporan() {
