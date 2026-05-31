@@ -245,6 +245,7 @@
         <div class="meta-kinerja-box" id="boxMetaKinerja">
           <table>
             <tr><td style="font-weight: bold; width: 100px;">Nama</td><td>: <span id="lblKinerjaNama">-</span></td></tr>
+            <tr><td style="font-weight: bold;">NIP</td><td>: <span id="lblKinerjaNIP">-</span></td></tr>
             <tr><td style="font-weight: bold;">Jabatan</td><td>: <span id="lblKinerjaJabatan">-</span></td></tr>
             <tr><td style="font-weight: bold;">Atasan</td><td>: <span id="lblKinerjaAtasan">-</span></td></tr>
           </table>
@@ -292,7 +293,7 @@
     const adminAktif = "System Admin";
     let daftarPegawaiCache = [];
     let dataLaporanSekarang = [];
-    let databaseMentahAbsen = []; // Cache penampung data respon dari server
+    let databaseMentahAbsen = []; 
     
     let jamKerjaSetting = {
       masukSeninKamis: "08:00",
@@ -338,7 +339,6 @@
       document.getElementById("filterBulan").value = blnHariIni;
       document.getElementById("filterType").value = "harian";
       
-      // Mengisi default rentang tanggal pada form laporan kinerja
       document.getElementById("kinerjaTglAwal").value = tglHariIni;
       document.getElementById("kinerjaTglAkhir").value = tglHariIni;
       
@@ -454,7 +454,7 @@
         const data = await res.json();
         if(data.result === "success") {
           tbody.innerHTML = "";
-          databaseMentahAbsen = data.data; // Simpan di global variabel agar panel kinerja bisa akses instan tanpa fetch ulang
+          databaseMentahAbsen = data.data; 
           
           if(data.settingJamKerja) {
             jamKerjaSetting.masukSeninKamis = data.settingJamKerja.masukSeninKamis || jamKerjaSetting.masukSeninKamis;
@@ -508,15 +508,12 @@
             
             const jenisUpper = (item.jenis || "").trim().toUpperCase();
 
-            // LOGIKA PEMBARUAN UTAMA: Jika jenis absen di luar WFO, WFH, WFA
             if (jenisUpper !== "WFO" && jenisUpper !== "WFH" && jenisUpper !== "WFA") {
-              // Tulis keterangan masuk & pulang sesuai dengan jenis absen tersebut
               txtMasuk = item.jenis;
               txtPulang = item.jenis;
               warnaMasuk = "var(--warning)";
               warnaPulang = "var(--warning)";
             } else {
-              // Logika normal untuk WFO / WFH / WFA
               const hariIndex = ambilIndexHariDariTglStr(item.tanggal);
               const jamPulangResmi = (hariIndex === 5) ? jamKerjaSetting.pulangJumat : jamKerjaSetting.pulangSeninKamis;
               
@@ -546,7 +543,7 @@
             if(jenisUpper === "WFO") bgBadge = "#c6f6d5; color: #22543d;";
             else if(jenisUpper === "WFH") bgBadge = "#feebc8; color: #744210;";
             else if(jenisUpper === "WFA") bgBadge = "#e2e8f0; color: #4a5568;";
-            else bgBadge = "#fed7d7; color: #742a2a;"; // CUTI, IJIN, SAKIT, dll
+            else bgBadge = "#fed7d7; color: #742a2a;"; 
 
             tr.innerHTML = `
               <td>${item.tanggal}</td>
@@ -574,6 +571,10 @@
     // =====================================================
     function bersihkanTabelKinerja() {
       document.getElementById("boxMetaKinerja").style.display = "none";
+      document.getElementById("lblKinerjaNama").innerText = "-";
+      document.getElementById("lblKinerjaNIP").innerText = "-";
+      document.getElementById("lblKinerjaJabatan").innerText = "-";
+      document.getElementById("lblKinerjaAtasan").innerText = "-";
       document.getElementById("bodyLaporanKinerja").innerHTML = '<tr><td colspan="3" class="text-center" style="color:#a0aec0; padding:20px;">Silakan klik tombol proses untuk memperbarui data.</td></tr>';
     }
 
@@ -588,11 +589,20 @@
       if (tglAwal > tglAkhir) { alert("Tanggal awal tidak boleh lebih besar dari tanggal akhir!"); return; }
 
       // Cari metadata profil pegawai dari cache
-      const profilPegawai = daftarPegawaiCache.find(p => p.nip === nipTerpilih);
+      const profilPegawai = daftarPegawaiCache.find(p => String(p.nip || p.NIP || "").trim() === String(nipTerpilih).trim());
+      
       if (profilPegawai) {
-        document.getElementById("lblKinerjaNama").innerText = profilPegawai.nama;
-        document.getElementById("lblKinerjaJabatan").innerText = profilPegawai.jabatan || "-";
-        document.getElementById("lblKinerjaAtasan").innerText = profilPegawai.atasan || "-";
+        document.getElementById("lblKinerjaNama").innerText = profilPegawai.nama || profilPegawai.NAMA || "-";
+        // Solusi Menampilkan NIP: mengambil data fallback jika object properti tidak terbaca
+        document.getElementById("lblKinerjaNIP").innerText = profilPegawai.nip || profilPegawai.NIP || nipTerpilih;
+        document.getElementById("lblKinerjaJabatan").innerText = profilPegawai.jabatan || profilPegawai.JABATAN || "-";
+        document.getElementById("lblKinerjaAtasan").innerText = profilPegawai.atasan || profilPegawai.ATASAN || "-";
+        document.getElementById("boxMetaKinerja").style.display = "block";
+      } else {
+        document.getElementById("lblKinerjaNama").innerText = "-";
+        document.getElementById("lblKinerjaNIP").innerText = nipTerpilih;
+        document.getElementById("lblKinerjaJabatan").innerText = "-";
+        document.getElementById("lblKinerjaAtasan").innerText = "-";
         document.getElementById("boxMetaKinerja").style.display = "block";
       }
 
@@ -603,7 +613,7 @@
 
       // Filter data kinerja berdasarkan NIP dan rentang tanggal kustom
       const dataKinerjaSaring = databaseMentahAbsen.filter(item => {
-        if (String(item.nip).trim() !== nipTerpilih) return false;
+        if (String(item.nip || "").trim() !== String(nipTerpilih).trim()) return false;
         if (!item.tanggal.includes("/")) return false;
 
         const p = item.tanggal.split("/");
@@ -613,7 +623,6 @@
         return itemDateStr >= tglAwal && itemDateStr <= tglAkhir;
       });
 
-      // Urutkan data berdasarkan tanggal dari yang terlama
       dataKinerjaSaring.sort((a, b) => {
         const dateA = a.tanggal.split('/').reverse().join('');
         const dateB = b.tanggal.split('/').reverse().join('');
@@ -627,11 +636,9 @@
         return;
       }
 
-      // Render baris data ke tabel laporan performa kerja
       dataKinerjaSaring.forEach(item => {
         const tr = document.createElement("tr");
         
-        // Bersihkan data jika kosong/hanya tanda hubung dari sheet
         const uraian = (item.uraian_tugas && item.uraian_tugas !== "-") ? item.uraian_tugas : `<em style="color:#a0aec0;">Tidak ada catatan aktivitas (Bukan WFO/WFH/WFA)</em>`;
         const output = (item.output && item.output !== "-") ? item.output : `<em style="color:#a0aec0;">-</em>`;
 
