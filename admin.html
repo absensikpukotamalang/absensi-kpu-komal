@@ -592,6 +592,7 @@
       const profilPegawai = daftarPegawaiCache.find(p => p.nip === nipTerpilih);
       if (profilPegawai) {
         document.getElementById("lblKinerjaNama").innerText = profilPegawai.nama;
+        document.getElementById("lblKinerjaNIP").innerText = profilPegawai.NIP;
         document.getElementById("lblKinerjaJabatan").innerText = profilPegawai.jabatan || "-";
         document.getElementById("lblKinerjaAtasan").innerText = profilPegawai.atasan || "-";
         document.getElementById("boxMetaKinerja").style.display = "block";
