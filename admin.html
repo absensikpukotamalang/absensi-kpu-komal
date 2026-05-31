@@ -245,7 +245,6 @@
         <div class="meta-kinerja-box" id="boxMetaKinerja">
           <table>
             <tr><td style="font-weight: bold; width: 100px;">Nama</td><td>: <span id="lblKinerjaNama">-</span></td></tr>
-            <tr><td style="font-weight: bold; width: 100px;">NIP</td><td>: <span id="lblKinerjaNip">-</span></td></tr>
             <tr><td style="font-weight: bold;">Jabatan</td><td>: <span id="lblKinerjaJabatan">-</span></td></tr>
             <tr><td style="font-weight: bold;">Atasan</td><td>: <span id="lblKinerjaAtasan">-</span></td></tr>
           </table>
@@ -592,7 +591,6 @@
       const profilPegawai = daftarPegawaiCache.find(p => p.nip === nipTerpilih);
       if (profilPegawai) {
         document.getElementById("lblKinerjaNama").innerText = profilPegawai.nama;
-        document.getElementById("lblKinerjanip").innerText = profilPegawai.nip;
         document.getElementById("lblKinerjaJabatan").innerText = profilPegawai.jabatan || "-";
         document.getElementById("lblKinerjaAtasan").innerText = profilPegawai.atasan || "-";
         document.getElementById("boxMetaKinerja").style.display = "block";
