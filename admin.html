@@ -203,7 +203,6 @@
     let daftarPegawaiCache = [];
     let dataLaporanSekarang = [];
     
-    // Objek Konfigurasi Default (Akan otomatis ditimpa jika Apps Script mengirim data dari sheet setting)
     let jamKerjaSetting = {
       masukSeninKamis: "08:00",
       pulangSeninKamis: "16:00",
@@ -302,10 +301,9 @@
       const bulan = document.getElementById("filterBulan").value;
 
       let paramQuery = `?mode=admin_laporan&type=${type}`;
-      if(type === "harian" && tglAwal) paramQuery += `&tglAwal=${tglAwal}`;
-      else if(type === "bulanan" && bulan) paramQuery += `&bulan=${bulan}`;
-      else if(type === "custom" && tglAwal && tglAkhir) paramQuery += `&tglAwal=${tglAwal}&tglAkhir=${tglAkhir}`;
-      else { alert("Lengkapi parameter tanggal!"); return; }
+      if (!tglAwal && (type === "harian" || type === "custom")) { alert("Pilih tanggal awal!"); return; }
+      if (!tglAkhir && type === "custom") { alert("Pilih tanggal akhir rentang!"); return; }
+      if (!bulan && type === "bulanan") { alert("Pilih bulan laporan!"); return; }
 
       showLoading(true);
       const tbody = document.getElementById("bodyLaporanAdmin");
@@ -318,7 +316,6 @@
         if(data.result === "success") {
           tbody.innerHTML = "";
           
-          // Memperbaiki pembacaan objek setting (menghilangkan spasi)
           if(data.settingJamKerja) {
             jamKerjaSetting.masukSeninKamis = data.settingJamKerja.masukSeninKamis || jamKerjaSetting.masukSeninKamis;
             jamKerjaSetting.pulangSeninKamis = data.settingJamKerja.pulangSeninKamis || jamKerjaSetting.pulangSeninKamis;
@@ -326,21 +323,37 @@
             jamKerjaSetting.pulangJumat = data.settingJamKerja.pulangJumat || jamKerjaSetting.pulangJumat;
           }
 
-          if(data.data.length === 0) { 
+          const dataDisaring = data.data.filter(item => {
+            if (!item.tanggal.includes("/")) return false;
+            const p = item.tanggal.split("/");
+            const thnFull = parseInt(p[2]) < 100 ? 2000 + parseInt(p[2]) : parseInt(p[2]);
+            const itemDateStr = `${thnFull}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
+
+            if (type === "harian") {
+              return itemDateStr === tglAwal;
+            } else if (type === "bulanan") {
+              return itemDateStr.startsWith(bulan);
+            } else if (type === "custom") {
+              return itemDateStr >= tglAwal && itemDateStr <= tglAkhir;
+            }
+            return true;
+          });
+
+          if(dataDisaring.length === 0) { 
             tbody.innerHTML = '<tr><td colspan="10" class="text-center" style="color:var(--danger); padding:15px;">Tidak ditemukan data presensi pada periode ini.</td></tr>'; 
             return; 
           }
           
-          data.data.sort((a, b) => {
+          dataDisaring.sort((a, b) => {
             const dateA = a.tanggal.split('/').reverse().join('');
             const dateB = b.tanggal.split('/').reverse().join('');
             if (dateA !== dateB) return dateA.localeCompare(dateB);
             return a.nama.localeCompare(b.nama);
           });
 
-          dataLaporanSekarang = data.data;
+          dataLaporanSekarang = dataDisaring;
 
-          data.data.forEach(item => {
+          dataDisaring.forEach(item => {
             const tr = document.createElement("tr");
             
             const urlMasukValid = konversiKeDirectLinkDrive(item.fotoMasuk);
@@ -358,8 +371,6 @@
             let txtPulang = "Belum Absen", warnaPulang = "inherit";
             
             const hariIndex = ambilIndexHariDariTglStr(item.tanggal);
-            
-            // MEMBACA ATURAN JAM PULANG BERDASARKAN HASIL DATA SPREADSHEET SHEET SETTING
             const jamPulangResmi = (hariIndex === 5) ? jamKerjaSetting.pulangJumat : jamKerjaSetting.pulangSeninKamis;
             
             let menitTerlambat = 0;
@@ -374,10 +385,8 @@
             }
 
             if (item.jamPulang && item.jamPulang !== "-") {
-              // Menghitung selisih durasi kepulangan dengan basis Jam Kerja dari spreadsheet setting
               const kompensasiMenit = hitungMenitSelisih(jamPulangResmi, item.jamPulang);
-              
-              if (kompensasiMenit >= menitTerlambat) {
+              if (kompensasiMenit >= 0) {
                 txtPulang = "Tepat Waktu";
                 warnaPulang = "var(--success)";
               } else {
@@ -401,8 +410,8 @@
               <td>${item.nip}</td>
               <td><strong>${item.nama}</strong></td>
               <td><span class="status-badge" style="background-color:${bgBadge}">${item.jenis}</span></td>
-              <td>${item.jamMasuk}</td>
-              <td>${item.jamPulang}</td>
+              <td>${item.jamMasuk || '-'}</td>
+              <td>${item.jamPulang || '-'}</td>
               <td style="color:${warnaMasuk}; font-weight:600;">${txtMasuk}</td>
               <td style="color:${warnaPulang}; font-weight:600;">${txtPulang}</td>
               <td class="text-center">${tagFotoMasuk}</td>
@@ -412,6 +421,7 @@
           });
         }
       } catch(e) { 
+        console.error(e);
         tbody.innerHTML = `<tr><td colspan="10" class="text-center" style="color:var(--danger);">Gagal memuat rekap data. Periksa kembali konfigurasi API.</td></tr>`; 
       } finally { showLoading(false); }
     }
@@ -464,8 +474,8 @@
             <td class="text-center" style="mso-number-format:'\\@';">'${item.nip}</td>
             <td><b>${item.nama}</b></td>
             <td class="text-center">${item.jenis}</td>
-            <td class="text-center">${item.jamMasuk}</td>
-            <td class="text-center">${item.jamPulang}</td>
+            <td class="text-center">${item.jamMasuk || '-'}</td>
+            <td class="text-center">${item.jamPulang || '-'}</td>
             <td ${clsMasuk}>${item.kalkulasiMasuk}</td>
             <td ${clsPulang}>${item.kalkulasiPulang}</td>
             <td>${item.fotoMasuk || '-'}</td>
