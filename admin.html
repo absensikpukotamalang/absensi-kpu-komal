@@ -15,6 +15,7 @@
       --danger: #e53e3e;
       --warning: #dd6b20;
       --purple: #6b46c1;
+      --orange-dark: #c05621;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -26,10 +27,7 @@
     header h1 { font-size: 24px; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
     header p { font-size: 13px; opacity: 0.9; margin-top: 5px; }
     
-    /* STYLE UNTUK FORM LOGIN */
-    .login-wrapper {
-      display: flex; justify-content: center; align-items: center; min-height: 85vh;
-    }
+    .login-wrapper { display: flex; justify-content: center; align-items: center; min-height: 85vh; }
     .login-card {
       background: white; color: var(--text-dark); padding: 30px; border-radius: 16px;
       box-shadow: 0 15px 35px rgba(0,0,0,0.3); width: 100%; max-width: 400px;
@@ -40,11 +38,11 @@
     .login-card p { color: #718096; font-size: 13px; margin-bottom: 20px; }
     .error-msg { color: var(--danger); font-size: 13px; font-weight: bold; margin-top: 10px; display: none; }
 
-    .nav-menu { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
+    .nav-menu { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
     .nav-item { 
-      flex: 1; min-width: 180px; padding: 14px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2); 
+      flex: 1; min-width: 160px; padding: 14px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2); 
       border-radius: 12px; text-align: center; font-weight: bold; cursor: pointer; transition: all 0.2s; 
-      font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 8px;
+      font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 6px;
     }
     .nav-item.active { background: #fff; color: var(--admin-color); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
 
@@ -70,7 +68,7 @@
     .table-responsive { width: 100%; overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 12px; background: white; margin-top: 10px; }
     table { width: 100%; border-collapse: collapse; font-size: 13px; } 
     
-    /* Table Laporan Admin Layout */
+    /* Table Layouts */
     .table-laporan-admin th:nth-child(1), .table-laporan-admin td:nth-child(1) { width: 8.5%; } 
     .table-laporan-admin th:nth-child(2), .table-laporan-admin td:nth-child(2) { width: 14%; }  
     .table-laporan-admin th:nth-child(3), .table-laporan-admin td:nth-child(3) { width: 20%; }  
@@ -83,6 +81,8 @@
     .table-laporan-admin th:nth-child(10), .table-laporan-admin td:nth-child(10) { width: 7%; }  
 
     th { background: var(--admin-color); color: white; padding: 12px 6px; font-weight: 600; text-align: left; }
+    th.sortable { cursor: pointer; position: relative; user-select: none; }
+    th.sortable:hover { background: var(--admin-dark); }
     td { padding: 10px 8px; border-bottom: 1px solid #e2e8f0; vertical-align: middle; word-wrap: break-word; white-space: normal; } 
     tr:nth-child(even) { background: #f8fafc; }
     .text-center { text-align: center; }
@@ -161,7 +161,8 @@
       <div class="nav-menu">
         <div class="nav-item active" id="tab-laporan" onclick="switchAdminTab('laporan')">📊 Dashboard Laporan</div>
         <div class="nav-item" id="tab-kinerja" onclick="switchAdminTab('kinerja')">📈 Laporan Kinerja</div>
-        <div class="nav-item" id="tab-input" onclick="switchAdminTab('input')">✍️ Input Cuti / Izin Manual</div>
+        <div class="nav-item" id="tab-keterlambatan" onclick="switchAdminTab('keterlambatan')">⏱️ Rekap Keterlambatan</div>
+        <div class="nav-item" id="tab-input" onclick="switchAdminTab('input')">✍️ Input Manual</div>
       </div>
 
       <div class="card view-panel" id="panel-laporan" style="display: block;">
@@ -269,6 +270,51 @@
         </div>
       </div>
 
+      <div class="card view-panel" id="panel-keterlambatan">
+        <h3 style="color: var(--warning); border-bottom-color: #feebc8;">Rekap Analisis Keterlambatan Pegawai</h3>
+        
+        <div class="filter-group">
+          <div>
+            <label for="delayTglAwal">Mulai Tanggal</label>
+            <input type="date" id="delayTglAwal">
+          </div>
+          <div>
+            <label for="delayTglAkhir">Sampai Tanggal</label>
+            <input type="date" id="delayTglAkhir">
+          </div>
+          <div>
+            <label for="sortDelayType">Urutkan Berdasarkan</label>
+            <select id="sortDelayType" onchange="urutkanTabelKeterlambatan()">
+              <option value="menit-desc" selected>Total Menit (Paling Tinggi)</option>
+              <option value="menit-asc">Total Menit (Paling Rendah)</option>
+              <option value="frekuensi-desc">Frekuensi Terlambat (Paling Sering)</option>
+              <option value="frekuensi-asc">Frekuensi Terlambat (Paling Jarang)</option>
+              <option value="nama-asc">Nama Pegawai (A - Z)</option>
+            </select>
+          </div>
+        </div>
+
+        <button onclick="prosesRekapKeterlambatan()" style="background: var(--warning);">HITUNG REKAP KETERLAMBATAN</button>
+
+        <div class="table-responsive" style="margin-top: 15px;">
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 25%;">NIP</th>
+                <th style="width: 35%;">Nama Pegawai</th>
+                <th class="sortable text-center" style="width: 20%;" onclick="toggleSortViaHeader('frekuensi')">Frekuensi Terlambat ⇅</th>
+                <th class="sortable text-center" style="width: 20%;" onclick="toggleSortViaHeader('menit')">Total Durasi (Menit) ⇅</th>
+              </tr>
+            </thead>
+            <tbody id="bodyRekapKeterlambatan">
+              <tr>
+                <td colspan="4" class="text-center" style="color:#a0aec0; padding:20px;">Tentukan rentang tanggal lalu klik tombol proses.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       <div class="card view-panel" id="panel-input">
         <h3>Formulir Input Ketidakhadiran Pegawai</h3>
         <label for="inputPegawai">Pilih Pegawai yang Berhalangan</label>
@@ -294,6 +340,7 @@
     let daftarPegawaiCache = [];
     let dataLaporanSekarang = [];
     let databaseMentahAbsen = []; 
+    let rekapKeterlambatanProcessed = [];
     
     let jamKerjaSetting = {
       masukSeninKamis: "08:00",
@@ -341,6 +388,9 @@
       
       document.getElementById("kinerjaTglAwal").value = tglHariIni;
       document.getElementById("kinerjaTglAkhir").value = tglHariIni;
+
+      document.getElementById("delayTglAwal").value = tglHariIni;
+      document.getElementById("delayTglAkhir").value = tglHariIni;
       
       toggleFilterFields();
 
@@ -351,10 +401,12 @@
     function switchAdminTab(target) {
       document.getElementById('panel-laporan').style.display = 'none';
       document.getElementById('panel-kinerja').style.display = 'none';
+      document.getElementById('panel-keterlambatan').style.display = 'none';
       document.getElementById('panel-input').style.display = 'none';
       
       document.getElementById('tab-laporan').classList.remove('active');
       document.getElementById('tab-kinerja').classList.remove('active');
+      document.getElementById('tab-keterlambatan').classList.remove('active');
       document.getElementById('tab-input').classList.remove('active');
       
       if (target === 'laporan') {
@@ -363,6 +415,9 @@
       } else if (target === 'kinerja') {
         document.getElementById('panel-kinerja').style.display = 'block';
         document.getElementById('tab-kinerja').classList.add('active');
+      } else if (target === 'keterlambatan') {
+        document.getElementById('panel-keterlambatan').style.display = 'block';
+        document.getElementById('tab-keterlambatan').classList.add('active');
       } else {
         document.getElementById('panel-input').style.display = 'block';
         document.getElementById('tab-input').classList.add('active');
@@ -566,9 +621,6 @@
       } finally { showLoading(false); }
     }
 
-    // =====================================================
-    // LOGIKA PEMBENTUKAN LAPORAN KINERJA PEGAWAI
-    // =====================================================
     function bersihkanTabelKinerja() {
       document.getElementById("boxMetaKinerja").style.display = "none";
       document.getElementById("lblKinerjaNama").innerText = "-";
@@ -588,12 +640,10 @@
       if (!tglAwal || !tglAkhir) { alert("Rentang tanggal wajib ditentukan!"); return; }
       if (tglAwal > tglAkhir) { alert("Tanggal awal tidak boleh lebih besar dari tanggal akhir!"); return; }
 
-      // Cari metadata profil pegawai dari cache
       const profilPegawai = daftarPegawaiCache.find(p => String(p.nip || p.NIP || "").trim() === String(nipTerpilih).trim());
       
       if (profilPegawai) {
         document.getElementById("lblKinerjaNama").innerText = profilPegawai.nama || profilPegawai.NAMA || "-";
-        // Solusi Menampilkan NIP: mengambil data fallback jika object properti tidak terbaca
         document.getElementById("lblKinerjaNIP").innerText = profilPegawai.nip || profilPegawai.NIP || nipTerpilih;
         document.getElementById("lblKinerjaJabatan").innerText = profilPegawai.jabatan || profilPegawai.JABATAN || "-";
         document.getElementById("lblKinerjaAtasan").innerText = profilPegawai.atasan || profilPegawai.ATASAN || "-";
@@ -611,7 +661,6 @@
         return;
       }
 
-      // Filter data kinerja berdasarkan NIP dan rentang tanggal kustom
       const dataKinerjaSaring = databaseMentahAbsen.filter(item => {
         if (String(item.nip || "").trim() !== String(nipTerpilih).trim()) return false;
         if (!item.tanggal.includes("/")) return false;
@@ -649,6 +698,116 @@
         `;
         tbody.appendChild(tr);
       });
+    }
+
+    // =====================================================
+    // LOGIKA PROSES REKAP KETERLAMBATAN BARU
+    // =====================================================
+    function prosesRekapKeterlambatan() {
+      const tglAwal = document.getElementById("delayTglAwal").value;
+      const tglAkhir = document.getElementById("delayTglAkhir").value;
+      const tbody = document.getElementById("bodyRekapKeterlambatan");
+
+      if (!tglAwal || !tglAkhir) { alert("Rentang tanggal awal & akhir wajib diisi!"); return; }
+      if (tglAwal > tglAkhir) { alert("Tanggal awal tidak boleh melebihi tanggal akhir!"); return; }
+
+      if (databaseMentahAbsen.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center" style="color:var(--danger); padding:15px;">Database internal kosong. Lakukan penarikan di Dashboard Laporan terlebih dahulu untuk sinkronisasi.</td></tr>';
+        return;
+      }
+
+      // 1. Grouping map berdasarkan pegawai di data cache untuk memastikan semua nama terdaftar masuk perhitungan
+      let mapPegawaiDelay = {};
+      daftarPegawaiCache.forEach(p => {
+        mapPegawaiDelay[p.nip] = {
+          nip: p.nip,
+          nama: p.nama,
+          frekuensi: 0,
+          totalMenit: 0
+        };
+      });
+
+      // 2. Loop filtering rekap keterlambatan berdasarkan rentang tanggal
+      databaseMentahAbsen.forEach(item => {
+        if (!item.tanggal.includes("/")) return;
+        const p = item.tanggal.split("/");
+        const thnFull = p[2].length === 2 ? "20" + p[2] : p[2];
+        const itemDateStr = `${thnFull}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
+
+        if (itemDateStr >= tglAwal && itemDateStr <= tglAkhir) {
+          let menit = 0;
+          let stringKet = String(item.keterangan || "0").trim();
+          
+          if (stringKet !== "0" && stringKet !== "-" && !isNaN(stringKet)) {
+            menit = parseInt(stringKet);
+          }
+
+          if (menit > 0) {
+            // Jika NIP pegawai tidak ada di cache internal pegawai, buat objek dinamis baru
+            if (!mapPegawaiDelay[item.nip]) {
+              mapPegawaiDelay[item.nip] = { nip: item.nip, nama: item.nama || "Unknown", frekuensi: 0, totalMenit: 0 };
+            }
+            mapPegawaiDelay[item.nip].frekuensi += 1;
+            mapPegawaiDelay[item.nip].totalMenit += menit;
+          }
+        }
+      });
+
+      // Konversi objek Map kelompok data ke Array
+      rekapKeterlambatanProcessed = Object.values(mapPegawaiDelay);
+
+      // Jalankan fungsi sorting visual tabel
+      urutkanTabelKeterlambatan();
+    }
+
+    function urutkanTabelKeterlambatan() {
+      const rule = document.getElementById("sortDelayType").value;
+      const tbody = document.getElementById("bodyRekapKeterlambatan");
+
+      if (rekapKeterlambatanProcessed.length === 0) return;
+
+      rekapKeterlambatanProcessed.sort((a, b) => {
+        if (rule === "menit-desc") return b.totalMenit - a.totalMenit;
+        if (rule === "menit-asc") return a.totalMenit - b.totalMenit;
+        if (rule === "frekuensi-desc") return b.frekuensi - a.frekuensi;
+        if (rule === "frekuensi-asc") return a.frekuensi - b.frekuensi;
+        if (rule === "nama-asc") return a.nama.localeCompare(b.nama);
+        return 0;
+      });
+
+      tbody.innerHTML = "";
+
+      // Cari rekap yang memiliki riwayat keterlambatan (>0)
+      const dataAdaKeterlambatan = rekapKeterlambatanProcessed.filter(x => x.totalMenit > 0);
+
+      if (dataAdaKeterlambatan.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center" style="color:var(--success); padding:20px; font-weight:bold;">Alhamdulillah! Tidak ada riwayat pegawai yang terlambat pada periode rentang tanggal ini.</td></tr>';
+        return;
+      }
+
+      dataAdaKeterlambatan.forEach(item => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><code>${item.nip}</code></td>
+          <td><strong>${item.nama}</strong></td>
+          <td class="text-center" style="color:var(--orange-dark); font-weight:700;">${item.frekuensi} Kali</td>
+          <td class="text-center" style="color:var(--danger); font-weight:700;">${item.totalMenit} Menit</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Fungsi Sortir Cepat Alternatif dengan mengklik Judul Kolom Header Tabel (Interaktif)
+    let sortToggleHeaderState = true;
+    function toggleSortViaHeader(tipe) {
+      sortToggleHeaderState = !sortToggleHeaderState;
+      const selectorElement = document.getElementById("sortDelayType");
+      if (tipe === 'frekuensi') {
+        selectorElement.value = sortToggleHeaderState ? "frekuensi-desc" : "frekuensi-asc";
+      } else if (tipe === 'menit') {
+        selectorElement.value = sortToggleHeaderState ? "menit-desc" : "menit-asc";
+      }
+      urutkanTabelKeterlambatan();
     }
 
     function exportKeExcelLaporan() {
