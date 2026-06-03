@@ -68,22 +68,11 @@
     .table-responsive { width: 100%; overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 12px; background: white; margin-top: 10px; }
     table { width: 100%; border-collapse: collapse; font-size: 13px; } 
     
-    /* Table Layouts */
-    .table-laporan-admin th:nth-child(1), .table-laporan-admin td:nth-child(1) { width: 8.5%; } 
-    .table-laporan-admin th:nth-child(2), .table-laporan-admin td:nth-child(2) { width: 14%; }  
-    .table-laporan-admin th:nth-child(3), .table-laporan-admin td:nth-child(3) { width: 20%; }  
-    .table-laporan-admin th:nth-child(4), .table-laporan-admin td:nth-child(4) { width: 7.5%; } 
-    .table-laporan-admin th:nth-child(5), .table-laporan-admin td:nth-child(5) { width: 7%; }   
-    .table-laporan-admin th:nth-child(6), .table-laporan-admin td:nth-child(6) { width: 7%; }   
-    .table-laporan-admin th:nth-child(7), .table-laporan-admin td:nth-child(7) { width: 11.5%; }
-    .table-laporan-admin th:nth-child(8), .table-laporan-admin td:nth-child(8) { width: 10.5%; }
-    .table-laporan-admin th:nth-child(9), .table-laporan-admin td:nth-child(9) { width: 7%; }   
-    .table-laporan-admin th:nth-child(10), .table-laporan-admin td:nth-child(10) { width: 7%; }  
-
-    th { background: var(--admin-color); color: white; padding: 12px 6px; font-weight: 600; text-align: left; }
+    /* Table Layout Dynamic Adjustment */
+    .table-laporan-admin th, .table-laporan-admin td { padding: 10px 6px; border-bottom: 1px solid #e2e8f0; vertical-align: middle; }
+    th { background: var(--admin-color); color: white; font-weight: 600; text-align: left; }
     th.sortable { cursor: pointer; position: relative; user-select: none; }
     th.sortable:hover { background: var(--admin-dark); }
-    td { padding: 10px 8px; border-bottom: 1px solid #e2e8f0; vertical-align: middle; word-wrap: break-word; white-space: normal; } 
     tr:nth-child(even) { background: #f8fafc; }
     .text-center { text-align: center; }
     
@@ -96,6 +85,10 @@
     .operator-badge { background: #feebc8; color: #c05621; padding: 8px 15px; border-radius: 8px; font-size: 13px; font-weight: bold; margin-bottom: 15px; display: inline-block; }
     .loading-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 9999; font-weight: bold; font-size: 15px; }
     .status-badge { padding: 3px 6px; border-radius: 5px; font-weight: bold; font-size: 11px; display: inline-block; }
+
+    .btn-action { padding: 4px 8px; border-radius: 6px; border: none; font-size: 11px; font-weight: bold; cursor: pointer; color: white; text-transform: uppercase; margin: 2px; display: inline-block; width: auto; }
+    .btn-edit { background: var(--warning); } .btn-edit:hover { background: #b75313; }
+    .btn-delete { background: var(--danger); } .btn-delete:hover { background: #b72b2b; }
 
     .photo-modal {
       display: none; position: fixed; z-index: 10000; top: 0; left: 0; width: 100%; height: 100%;
@@ -144,7 +137,7 @@
         <p>Silakan masukkan kredensial administrator</p>
         
         <label style="text-align: left;">Username</label>
-        <input type="text" id="txtUsername" placeholder="Masukkan username admin..." autocomplete="off">
+        <input type="text" id="txtUsername" value="admin" placeholder="Masukkan username admin..." autocomplete="off">
         
         <label style="text-align: left;">Password</label>
         <input type="password" id="txtPassword" placeholder="Masukkan sandi..." onkeypress="handleLoginKeyPress(event)">
@@ -220,11 +213,12 @@
                 <th>Ket. Pulang</th>
                 <th class="text-center">F.Masuk</th>
                 <th class="text-center">F.Pulang</th>
+                <th class="text-center" style="width: 130px;">Aksi Pengelola</th>
               </tr>
             </thead>
             <tbody id="bodyLaporanAdmin">
               <tr>
-                <td colspan="10" class="text-center" style="color:#a0aec0; padding:20px;">Data siap ditarik.</td>
+                <td colspan="11" class="text-center" style="color:#a0aec0; padding:20px;">Data siap ditarik.</td>
               </tr>
             </tbody>
           </table>
@@ -326,20 +320,40 @@
       </div>
 
       <div class="card view-panel" id="panel-input">
-        <h3>Formulir Input Ketidakhadiran Pegawai</h3>
+        <h3 id="txtHeaderFormManual">Formulir Input Ketidakhadiran Pegawai</h3>
+        <input type="hidden" id="txtEditRowId" value="">
+        
         <label for="inputPegawai">Pilih Pegawai yang Berhalangan</label>
         <select id="inputPegawai"><option value="">-- Mohon Tunggu, Memuat Data... --</option></select>
+        
         <label for="inputTanggal">Pilih Tanggal Berlaku</label>
         <input type="date" id="inputTanggal">
-        <label for="inputJenis">Status Ketidakhadiran</label>
-        <select id="inputJenis">
+        
+        <label for="inputJenis">Status Ketidakhadiran / Jenis Presensi</label>
+        <select id="inputJenis" onchange="adjustFormRequirement()">
           <option value="CUTI">CUTI TAHUNAN / KHUSUS</option>
           <option value="IJIN">IJIN KELUAR / DINAS LUAR</option>
           <option value="SAKIT">SAKIT (DENGAN SURAT DOKTER)</option>
+          <option value="WFO">WORK FROM OFFICE (WFO)</option>
+          <option value="WFH">WORK FROM HOME (WFH)</option>
         </select>
-        <label for="inputKeterangan">Keterangan Tambahan / Alasan</label>
-        <textarea id="inputKeterangan" rows="3" placeholder="Tuliskan keterangan detail..."></textarea>
-        <button onclick="kirimManualAdmin()" style="background: var(--success);">SIMPAN DATA ABSENSI</button>
+
+        <div id="wrapper-opsional-jam" style="display: none; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div>
+            <label>Jam Masuk Manual (HH:MM)</label>
+            <input type="text" id="inputJamMasuk" placeholder="07:30">
+          </div>
+          <div>
+            <label>Jam Pulang Manual (HH:MM)</label>
+            <input type="text" id="inputJamPulang" placeholder="16:00">
+          </div>
+        </div>
+        
+        <label for="inputKeterangan">Keterangan Tambahan / Catatan Admin</label>
+        <textarea id="inputKeterangan" rows="3" placeholder="Tuliskan alasan ketidakhadiran atau uraian tugas manual..."></textarea>
+        
+        <button id="btnSubmitManual" onclick="kirimManualAdmin()" style="background: var(--success);">SIMPAN DATA ABSENSI</button>
+        <button id="btnCancelEdit" onclick="resetFormManual()" style="background: #718096; margin-top: 5px; display: none;">BATALKAN EDIT</button>
       </div>
     </div>
   </div>
@@ -352,13 +366,7 @@
     let databaseMentahAbsen = []; 
     let rekapKeterlambatanProcessed = [];
     
-    // Fallback awal jam kerja internal aplikasi
-    let jamKerjaSetting = {
-      masukSeninKamis: "07:30",
-      pulangSeninKamis: "16:00",
-      masukJumat: "07:30",
-      pulangJumat: "16:30"
-    };
+    let jamKerjaSetting = { masukSeninKamis: "07:30", pulangSeninKamis: "16:00", masukJumat: "07:30", pulangJumat: "16:30" };
 
     function showLoading(show) { document.getElementById('loading').style.display = show ? 'flex' : 'none'; }
 
@@ -379,19 +387,13 @@
       }
     }
 
-    function handleLoginKeyPress(e) {
-      if (e.key === "Enter") { prosesValidasiLogin(); }
-    }
+    function handleLoginKeyPress(e) { if (e.key === "Enter") { prosesValidasiLogin(); } }
 
     async function aktifkanSistemUtamaAdmin() {
       const kini = new Date();
-      const opsiTanggal = { timeZone: 'Asia/Jakarta', year: 'numeric', month: '2-digit', day: '2-digit' };
-      const formatter = new Intl.DateTimeFormat('en-CA', opsiTanggal);
+      const formatter = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta', year: 'numeric', month: '2-digit', day: '2-digit' });
       const tglHariIni = formatter.format(kini);
-      
-      const opsiBulan = { timeZone: 'Asia/Jakarta', year: 'numeric', month: '2-digit' };
-      const formatterBulan = new Intl.DateTimeFormat('en-CA', opsiBulan);
-      const blnHariIni = formatterBulan.format(kini);
+      const blnHariIni = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta', year: 'numeric', month: '2-digit' }).format(kini);
 
       document.getElementById("filterTglAwal").value = tglHariIni;
       document.getElementById("filterBulan").value = blnHariIni;
@@ -400,12 +402,10 @@
       
       document.getElementById("kinerjaTglAwal").value = tglHariIni;
       document.getElementById("kinerjaTglAkhir").value = tglHariIni;
-
       document.getElementById("delayTglAwal").value = tglHariIni;
       document.getElementById("delayTglAkhir").value = tglHariIni;
       
       toggleFilterFields();
-
       await muatDaftarPegawaiAdmin();
       tarikLaporanAdmin(); 
     }
@@ -444,6 +444,11 @@
       document.getElementById("lbl-tglAwal").innerText = type === "custom" ? "Dari Tanggal" : "Pilih Tanggal";
     }
 
+    function adjustFormRequirement() {
+      const j = document.getElementById("inputJenis").value;
+      document.getElementById("wrapper-opsional-jam").style.display = (j === "WFO" || j === "WFH") ? "grid" : "none";
+    }
+
     async function muatDaftarPegawaiAdmin() {
       try {
         const res = await fetch(API);
@@ -460,14 +465,10 @@
           selectKiner.innerHTML = '<option value="">-- Pilih Pegawai --</option>';
           
           daftarPegawaiCache.forEach(p => {
-            const optLapor = document.createElement("option"); optLapor.value = p.nip; optLapor.textContent = `${p.nama} (${p.nip})`;
-            selectLapor.appendChild(optLapor);
-
-            const opt1 = document.createElement("option"); opt1.value = p.nip; opt1.textContent = `${p.nama} (${p.nip})`;
-            selectManual.appendChild(opt1);
-            
-            const opt2 = document.createElement("option"); opt2.value = p.nip; opt2.textContent = `${p.nama} (${p.nip})`;
-            selectKiner.appendChild(opt2);
+            const rowText = `${p.nama} (${p.nip})`;
+            selectLapor.appendChild(new Option(rowText, p.nip));
+            selectManual.appendChild(new Option(rowText, p.nip));
+            selectKiner.appendChild(new Option(rowText, p.nip));
           });
         }
       } catch(e) { console.error(e); }
@@ -476,36 +477,20 @@
     function konversiKeDirectLinkDrive(urlDrive) {
       if (!urlDrive || urlDrive.trim() === "" || urlDrive === "-") return "";
       let fileId = "";
-      if (urlDrive.includes("id=")) { fileId = urlDrive.split("id=")[1].split("&")[0]; } 
-      else if (urlDrive.includes("/d/")) { fileId = urlDrive.split("/d/")[1].split("/")[0]; } 
-      else if (urlDrive.includes("file/d/")) { fileId = urlDrive.split("file/d/")[1].split("/")[0]; }
-      if (fileId && fileId.trim() !== "") { return `https://drive.google.com/thumbnail?id=${fileId}&sz=w400`; }
-      return urlDrive;
+      if (urlDrive.includes("id=")) fileId = urlDrive.split("id=")[1].split("&")[0]; 
+      else if (urlDrive.includes("/d/")) fileId = urlDrive.split("/d/")[1].split("/")[0]; 
+      else if (urlDrive.includes("file/d/")) fileId = urlDrive.split("file/d/")[1].split("/")[0];
+      return fileId ? `https://drive.google.com/thumbnail?id=${fileId}&sz=w400` : urlDrive;
     }
 
     function bukaPopUpFoto(urlDirect, namaPegawai, tipeAbsen) {
-      const modal = document.getElementById("imagePopUpModal");
       document.getElementById("modalTargetImg").src = urlDirect;
       document.getElementById("modalTargetLabel").innerText = `${namaPegawai} (${tipeAbsen})`;
-      modal.style.display = "flex";
+      document.getElementById("imagePopUpModal").style.display = "flex";
     }
     function tutupPopUpFoto() { document.getElementById("imagePopUpModal").style.display = "none"; }
-
-    function hitungMenitSelisih(waktuAwal, waktuAkhir) {
-      const s = waktuAwal.split(":");
-      const e = waktuAkhir.split(":");
-      const menitAwal = parseInt(s[0]) * 60 + parseInt(s[1]);
-      const menitAkhir = parseInt(e[0]) * 60 + parseInt(e[1]);
-      return menitAkhir - menitAwal;
-    }
-
-    function ambilIndexHariDariTglStr(tglStr) {
-      const parts = tglStr.split("/");
-      // parts[0] = dd, parts[1] = MM, parts[2] = yy
-      const thnFull = parts[2].length === 2 ? "20" + parts[2] : parts[2];
-      const dateObj = new Date(thnFull, parts[1] - 1, parts[0]);
-      return dateObj.getDay(); // 0 = Minggu, 1 = Senin, ..., 4 = Kamis, 5 = Jumat, 6 = Sabtu
-    }
+    function hitungMenitSelisih(wAwal, wAkhir) { return ((e, s) => (e[0]*60 + parseInt(e[1])) - (s[0]*60 + parseInt(s[1])))(wAkhir.split(":"), wAwal.split(":")); }
+    function ambilIndexHariDariTglStr(tglStr) { const p = tglStr.split("/"); return new Date((p[2].length===2?"20"+p[2]:p[2]), p[1]-1, p[0]).getDay(); }
 
     async function tarikLaporanAdmin() {
       const type = document.getElementById("filterType").value;
@@ -514,111 +499,73 @@
       const bulan = document.getElementById("filterBulan").value;
       const nipSaring = document.getElementById("filterNamaPegawai").value;
 
-      let paramQuery = `?mode=admin_laporan&type=${type}`;
       if (!tglAwal && (type === "harian" || type === "custom")) { alert("Pilih tanggal awal!"); return; }
       if (!tglAkhir && type === "custom") { alert("Pilih tanggal akhir rentang!"); return; }
       if (!bulan && type === "bulanan") { alert("Pilih bulan laporan!"); return; }
 
       showLoading(true);
       const tbody = document.getElementById("bodyLaporanAdmin");
-      tbody.innerHTML = '<tr><td colspan="10" class="text-center">Sinkronisasi data rekap...</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="11" class="text-center">Sinkronisasi data rekap...</td></tr>';
       dataLaporanSekarang = [];
 
       try {
-        const res = await fetch(API + paramQuery);
+        const res = await fetch(`${API}?mode=admin_laporan&type=${type}`);
         const data = await res.json();
         if(data.result === "success") {
           tbody.innerHTML = "";
           databaseMentahAbsen = data.data; 
           
-          // Pemetaan Object Setting Jam Kerja dari sheet Google Spreadsheet
-          if(data.settingJamKerja) {
-            jamKerjaSetting.masukSeninKamis = data.settingJamKerja.masukSeninKamis || jamKerjaSetting.masukSeninKamis;
-            jamKerjaSetting.pulangSeninKamis = data.settingJamKerja.pulangSeninKamis || jamKerjaSetting.pulangSeninKamis;
-            jamKerjaSetting.masukJumat = data.settingJamKerja.masukJumat || jamKerjaSetting.masukJumat;
-            jamKerjaSetting.pulangJumat = data.settingJamKerja.pulangJumat || jamKerjaSetting.pulangJumat;
-          }
+          if(data.settingJamKerja) jamKerjaSetting = data.settingJamKerja;
 
           const dataDisaring = data.data.filter(item => {
             if (nipSaring && String(item.nip || "").trim() !== String(nipSaring).trim()) return false;
-            
             if (!item.tanggal.includes("/")) return false;
             const p = item.tanggal.split("/");
-            const thnFull = p[2].length === 2 ? "20" + p[2] : p[2];
-            const itemDateStr = `${thnFull}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
+            const itemDateStr = `${p[2].length===2?"20"+p[2]:p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
 
-            if (type === "harian") { return itemDateStr === tglAwal; } 
-            else if (type === "bulanan") { return itemDateStr.startsWith(bulan); } 
-            else if (type === "custom") { return itemDateStr >= tglAwal && itemDateStr <= tglAkhir; }
+            if (type === "harian") return itemDateStr === tglAwal;
+            if (type === "bulanan") return itemDateStr.startsWith(bulan);
+            if (type === "custom") return itemDateStr >= tglAwal && itemDateStr <= tglAkhir;
             return true;
           });
 
           if(dataDisaring.length === 0) { 
-            tbody.innerHTML = '<tr><td colspan="10" class="text-center" style="color:var(--danger); padding:15px;">Tidak ditemukan data presensi pada periode ini.</td></tr>'; 
+            tbody.innerHTML = '<tr><td colspan="11" class="text-center" style="color:var(--danger); padding:15px;">Tidak ditemukan data presensi pada periode ini.</td></tr>'; 
             return; 
           }
           
-          dataDisaring.sort((a, b) => {
-            const dateA = a.tanggal.split('/').reverse().join('');
-            const dateB = b.tanggal.split('/').reverse().join('');
-            if (dateA !== dateB) return dateA.localeCompare(dateB);
-            return a.nama.localeCompare(b.nama);
-          });
-
+          dataDisaring.sort((a, b) => a.tanggal.split('/').reverse().join('').localeCompare(b.tanggal.split('/').reverse().join('')) || a.nama.localeCompare(b.nama));
           dataLaporanSekarang = dataDisaring;
 
           dataDisaring.forEach(item => {
             const tr = document.createElement("tr");
-            
             const urlMasukValid = konversiKeDirectLinkDrive(item.fotoMasuk);
             const urlPulangValid = konversiKeDirectLinkDrive(item.fotoPulang);
 
-            const tagFotoMasuk = urlMasukValid 
-              ? `<img src="${urlMasukValid}" class="img-preview-table" onclick="bukaPopUpFoto('${urlMasukValid}', '${item.nama.replace(/'/g, "\\'")}', 'FOTO MASUK')">` 
-              : "-";
-              
-            const tagFotoPulang = urlPulangValid 
-              ? `<img src="${urlPulangValid}" class="img-preview-table" onclick="bukaPopUpFoto('${urlPulangValid}', '${item.nama.replace(/'/g, "\\'")}', 'FOTO PULANG')">` 
-              : "-";
+            const tagFotoMasuk = urlMasukValid ? `<img src="${urlMasukValid}" class="img-preview-table" onclick="bukaPopUpFoto('${urlMasukValid}', '${item.nama.replace(/'/g, "\\'")}', 'FOTO MASUK')">` : "-";
+            const tagFotoPulang = urlPulangValid ? `<img src="${urlPulangValid}" class="img-preview-table" onclick="bukaPopUpFoto('${urlPulangValid}', '${item.nama.replace(/'/g, "\\'")}', 'FOTO PULANG')">` : "-";
             
             let txtMasuk = "Tepat Waktu", warnaMasuk = "inherit";
             let txtPulang = "Belum Absen", warnaPulang = "inherit";
-            
             const jenisUpper = (item.jenis || "").trim().toUpperCase();
 
             if (jenisUpper !== "WFO" && jenisUpper !== "WFH" && jenisUpper !== "WFA") {
-              txtMasuk = item.jenis;
-              txtPulang = item.jenis;
-              warnaMasuk = "var(--warning)";
-              warnaPulang = "var(--warning)";
+              txtMasuk = item.jenis; txtPulang = item.jenis;
+              warnaMasuk = "var(--warning)"; warnaPulang = "var(--warning)";
             } else {
-              const hariIndex = ambilIndexHariDariTglStr(item.tanggal);
-              
-              // PERBAIKAN UTAMA: Hari jumat (index 5) menggunakan pulangJumat, sedangkan Senin-Kamis (index 1-4) menggunakan pulangSeninKamis
-              const jamPulangResmi = (hariIndex === 5) ? jamKerjaSetting.pulangJumat : jamKerjaSetting.pulangSeninKamis;
-              
-              let menitTerlambat = 0;
+              const jamPulangResmi = (ambilIndexHariDariTglStr(item.tanggal) === 5) ? jamKerjaSetting.pulangJumat : jamKerjaSetting.pulangSeninKamis;
               if (item.keterangan && item.keterangan !== "0" && item.keterangan !== "-") {
                 if(!isNaN(item.keterangan)) {
-                  menitTerlambat = parseInt(item.keterangan);
-                  txtMasuk = `Terlambat ${menitTerlambat} Menit`;
-                  warnaMasuk = "var(--danger)";
+                  txtMasuk = `Terlambat ${item.keterangan} Menit`; warnaMasuk = "var(--danger)";
                 } else { txtMasuk = item.keterangan; }
               }
-
               if (item.jamPulang && item.jamPulang !== "-") {
-                const kompensasiMenit = hitungMenitSelisih(jamPulangResmi, item.jamPulang);
-                if (kompensasiMenit >= 0) {
-                  txtPulang = "Tepat Waktu"; warnaPulang = "var(--success)";
-                } else {
-                  txtPulang = "PSW"; warnaPulang = "var(--danger)";
-                }
+                if (hitungMenitSelisih(jamPulangResmi, item.jamPulang) >= 0) { txtPulang = "Tepat Waktu"; warnaPulang = "var(--success)"; }
+                else { txtPulang = "PSW"; warnaPulang = "var(--danger)"; }
               }
             }
 
-            item.kalkulasiMasuk = txtMasuk;
-            item.kalkulasiPulang = txtPulang;
-
+            item.kalkulasiMasuk = txtMasuk; item.kalkulasiPulang = txtPulang;
             let bgBadge = "#edf2f7";
             if(jenisUpper === "WFO") bgBadge = "#c6f6d5; color: #22543d;";
             else if(jenisUpper === "WFH") bgBadge = "#feebc8; color: #744210;";
@@ -636,90 +583,150 @@
               <td style="color:${warnaPulang}; font-weight:600;">${txtPulang}</td>
               <td class="text-center">${tagFotoMasuk}</td>
               <td class="text-center">${tagFotoPulang}</td>
+              <td class="text-center">
+                <button class="btn-action btn-edit" onclick="pemicuEditLaporan(${item.rowId})">✏️</button>
+                <button class="btn-action btn-delete" onclick="pemicuHapusLaporan(${item.rowId})">❌</button>
+              </td>
             `;
             tbody.appendChild(tr);
           });
         }
-      } catch(e) { 
-        console.error(e);
-        tbody.innerHTML = `<tr><td colspan="10" class="text-center" style="color:var(--danger);">Gagal memuat rekap data.</td></tr>`; 
-      } finally { showLoading(false); }
+      } catch(e) { console.error(e); } finally { showLoading(false); }
     }
 
+    // INTERFACE CRUD LOGIC MANAGEMENT
+    function pemicuEditLaporan(id) {
+      const target = databaseMentahAbsen.find(x => x.rowId === id);
+      if(!target) return;
+      
+      switchAdminTab('input');
+      document.getElementById("txtHeaderFormManual").innerText = "Form Modifikasi Data Absensi / Manual Pegawai";
+      document.getElementById("txtEditRowId").value = target.rowId;
+      document.getElementById("inputPegawai").value = target.nip;
+      document.getElementById("inputJenis").value = ["WFO","WFH","CUTI","SAKIT","IJIN"].includes(target.jenis) ? target.jenis : "IJIN";
+      
+      const p = target.tanggal.split("/");
+      document.getElementById("inputTanggal").value = `${p[2].length===2?"20"+p[2]:p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
+      
+      adjustFormRequirement();
+      document.getElementById("inputJamMasuk").value = target.jamMasuk !== "-" ? target.jamMasuk : "";
+      document.getElementById("inputJamPulang").value = target.jamPulang !== "-" ? target.jamPulang : "";
+      document.getElementById("inputKeterangan").value = (target.uraian_tugas && target.uraian_tugas !== "-") ? target.uraian_tugas : target.keterangan;
+      
+      document.getElementById("btnSubmitManual").innerText = "SIMPAN PERUBAHAN DATA";
+      document.getElementById("btnCancelEdit").style.display = "block";
+    }
+
+    async function pemicuHapusLaporan(id) {
+      if(!confirm("Apakah Anda yakin ingin menghapus baris absensi ini secara permanen dari sistem spreadsheet?")) return;
+      showLoading(true);
+      try {
+        const res = await fetch(API, { method: "POST", body: new URLSearchParams({ action: "crud_manual", ops: "DELETE", rowId: id }) });
+        const data = await res.json();
+        alert(data.message);
+        tarikLaporanAdmin();
+      } catch(e) { alert("Gagal mengeksekusi operasi hapus."); } finally { showLoading(false); }
+    }
+
+    function resetFormManual() {
+      document.getElementById("txtHeaderFormManual").innerText = "Formulir Input Ketidakhadiran Pegawai";
+      document.getElementById("txtEditRowId").value = "";
+      document.getElementById("inputPegawai").value = "";
+      document.getElementById("inputTanggal").value = "";
+      document.getElementById("inputKeterangan").value = "";
+      document.getElementById("inputJamMasuk").value = "";
+      document.getElementById("inputJamPulang").value = "";
+      document.getElementById("inputJenis").value = "CUTI";
+      adjustFormRequirement();
+      document.getElementById("btnSubmitManual").innerText = "SIMPAN DATA ABSENSI";
+      document.getElementById("btnCancelEdit").style.display = "none";
+    }
+
+    async function kirimManualAdmin() {
+      const nip = document.getElementById("inputPegawai").value;
+      const tanggal = document.getElementById("inputTanggal").value;
+      const jenis = document.getElementById("inputJenis").value;
+      const keterangan = document.getElementById("inputKeterangan").value;
+      const editRowId = document.getElementById("txtEditRowId").value;
+
+      if(!nip || !tanggal) { alert("Kolom Pegawai dan Tanggal wajib ditentukan!"); return; }
+      const p = daftarPegawaiCache.find(x => x.nip === nip);
+      
+      const form = new URLSearchParams();
+      form.append("action", "crud_manual");
+      form.append("ops", editRowId ? "UPDATE" : "CREATE");
+      if(editRowId) form.append("rowId", editRowId);
+
+      form.append("nip", nip);
+      form.append("nama", p.nama);
+      form.append("jabatan", p.jabatan);
+      form.append("atasan", p.atasan);
+      form.append("tanggal", tanggal);
+      form.append("jenis", jenis);
+      
+      if(jenis === "WFO" || jenis === "WFH") {
+        form.append("jamMasuk", document.getElementById("inputJamMasuk").value || "07:30");
+        form.append("jamPulang", document.getElementById("inputJamPulang").value || "16:00");
+        form.append("uraian_tugas", keterangan);
+        form.append("output", "Manual Admin Entry");
+        form.append("keterangan", "0");
+      } else {
+        form.append("keterangan", keterangan || jenis);
+      }
+
+      showLoading(true);
+      try {
+        const res = await fetch(API, { method: "POST", body: form });
+        const data = await res.json();
+        if(data.result === "success") {
+          alert(data.message);
+          resetFormManual();
+          switchAdminTab('laporan');
+          tarikLaporanAdmin();
+        }
+      } catch(e) { alert("Gagal memproses pengiriman data manual."); } finally { showLoading(false); }
+    }
+
+    // FUNCTIONALITY PANEL KINERJA & KETERLAMBATAN
     function bersihkanTabelKinerja() {
       document.getElementById("boxMetaKinerja").style.display = "none";
-      document.getElementById("lblKinerjaNama").innerText = "-";
-      document.getElementById("lblKinerjaNIP").innerText = "-";
-      document.getElementById("lblKinerjaJabatan").innerText = "-";
-      document.getElementById("lblKinerjaAtasan").innerText = "-";
       document.getElementById("bodyLaporanKinerja").innerHTML = '<tr><td colspan="3" class="text-center" style="color:#a0aec0; padding:20px;">Silakan klik tombol proses untuk memperbarui data.</td></tr>';
     }
 
     function prosesLaporanKinerja() {
-      const nipTerpilih = document.getElementById("kinerjaPegawai").value;
+      const nip = document.getElementById("kinerjaPegawai").value;
       const tglAwal = document.getElementById("kinerjaTglAwal").value;
       const tglAkhir = document.getElementById("kinerjaTglAkhir").value;
       const tbody = document.getElementById("bodyLaporanKinerja");
 
-      if (!nipTerpilih) { alert("Silakan pilih pegawai terlebih dahulu!"); return; }
-      if (!tglAwal || !tglAkhir) { alert("Rentang tanggal wajib ditentukan!"); return; }
-      if (tglAwal > tglAkhir) { alert("Tanggal awal tidak boleh lebih besar dari tanggal akhir!"); return; }
-
-      const profilPegawai = daftarPegawaiCache.find(p => String(p.nip || p.NIP || "").trim() === String(nipTerpilih).trim());
+      if (!nip || !tglAwal || !tglAkhir) { alert("Lengkapi filter saringan!"); return; }
+      const profil = daftarPegawaiCache.find(p => String(p.nip).trim() === String(nip).trim());
       
-      if (profilPegawai) {
-        document.getElementById("lblKinerjaNama").innerText = profilPegawai.nama || profilPegawai.NAMA || "-";
-        document.getElementById("lblKinerjaNIP").innerText = profilPegawai.nip || profilPegawai.NIP || nipTerpilih;
-        document.getElementById("lblKinerjaJabatan").innerText = profilPegawai.jabatan || profilPegawai.JABATAN || "-";
-        document.getElementById("lblKinerjaAtasan").innerText = profilPegawai.atasan || profilPegawai.ATASAN || "-";
-        document.getElementById("boxMetaKinerja").style.display = "block";
-      } else {
-        document.getElementById("lblKinerjaNama").innerText = "-";
-        document.getElementById("lblKinerjaNIP").innerText = nipTerpilih;
-        document.getElementById("lblKinerjaJabatan").innerText = "-";
-        document.getElementById("lblKinerjaAtasan").innerText = "-";
-        document.getElementById("boxMetaKinerja").style.display = "block";
-      }
+      document.getElementById("lblKinerjaNama").innerText = profil ? profil.nama : "-";
+      document.getElementById("lblKinerjaNIP").innerText = nip;
+      document.getElementById("lblKinerjaJabatan").innerText = profil ? profil.jabatan : "-";
+      document.getElementById("lblKinerjaAtasan").innerText = profil ? profil.atasan : "-";
+      document.getElementById("boxMetaKinerja").style.display = "block";
 
       if (databaseMentahAbsen.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="3" class="text-center" style="color:var(--danger); padding:15px;">Basis data laporan kosong. Silakan muat ulang rekap di Dashboard Laporan terlebih dahulu.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="3" class="text-center" style="color:var(--danger);">Muat ulang rekap di Dashboard Laporan dahulu.</td></tr>';
         return;
       }
 
-      const dataKinerjaSaring = databaseMentahAbsen.filter(item => {
-        if (String(item.nip || "").trim() !== String(nipTerpilih).trim()) return false;
-        if (!item.tanggal.includes("/")) return false;
-
+      const disaring = databaseMentahAbsen.filter(item => {
+        if (String(item.nip).trim() !== String(nip).trim() || !item.tanggal.includes("/")) return false;
         const p = item.tanggal.split("/");
-        const thnFull = p[2].length === 2 ? "20" + p[2] : p[2];
-        const itemDateStr = `${thnFull}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
-        
-        return itemDateStr >= tglAwal && itemDateStr <= tglAkhir;
-      });
+        const dStr = `${p[2].length===2?"20"+p[2]:p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
+        return dStr >= tglAwal && dStr <= tglAkhir;
+      }).sort((a,b) => a.tanggal.split('/').reverse().join('').localeCompare(b.tanggal.split('/').reverse().join('')));
 
-      dataKinerjaSaring.sort((a, b) => {
-        const dateA = a.tanggal.split('/').reverse().join('');
-        const dateB = b.tanggal.split('/').reverse().join('');
-        return dateA.localeCompare(dateB);
-      });
-
-      tbody.innerHTML = "";
-
-      if (dataKinerjaSaring.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="3" class="text-center" style="color:var(--danger); padding:15px;">Tidak ditemukan uraian tugas atau aktivitas kerja pada rentang tanggal tersebut.</td></tr>';
-        return;
-      }
-
-      dataKinerjaSaring.forEach(item => {
+      tbody.innerHTML = disaring.length === 0 ? '<tr><td colspan="3" class="text-center">Tidak ada catatan performa.</td></tr>' : "";
+      disaring.forEach(item => {
         const tr = document.createElement("tr");
-        
-        const uraian = (item.uraian_tugas && item.uraian_tugas !== "-") ? item.uraian_tugas : `<em style="color:#a0aec0;">Tidak ada catatan aktivitas (Bukan WFO/WFH/WFA)</em>`;
-        const output = (item.output && item.output !== "-") ? item.output : `<em style="color:#a0aec0;">-</em>`;
-
         tr.innerHTML = `
-          <td class="text-center" style="font-weight: 600; color: var(--admin-dark);">${item.tanggal}</td>
-          <td style="line-height: 1.4; white-space: pre-line;">${uraian}</td>
-          <td style="line-height: 1.4;">${output}</td>
+          <td class="text-center" style="font-weight:600; color:var(--admin-dark);">${item.tanggal}</td>
+          <td style="line-height:1.4; white-space:pre-line;">${item.uraian_tugas || item.keterangan || '-'}</td>
+          <td style="line-height:1.4;">${item.output || '-'}</td>
         `;
         tbody.appendChild(tr);
       });
@@ -730,56 +737,36 @@
       const tglAkhir = document.getElementById("delayTglAkhir").value;
       const tbody = document.getElementById("bodyRekapKeterlambatan");
 
-      if (!tglAwal || !tglAkhir) { alert("Rentang tanggal awal & akhir wajib diisi!"); return; }
-      if (tglAwal > tglAkhir) { alert("Tanggal awal tidak boleh melebihi tanggal akhir!"); return; }
-
+      if (!tglAwal || !tglAkhir) { alert("Rentang tanggal wajib diisi!"); return; }
       if (databaseMentahAbsen.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" class="text-center" style="color:var(--danger); padding:15px;">Database internal kosong. Lakukan penarikan di Dashboard Laporan terlebih dahulu untuk sinkronisasi.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center">Database kosong. Lakukan penarikan di Dashboard Laporan dahulu.</td></tr>';
         return;
       }
 
-      let mapPegawaiDelay = {};
-      daftarPegawaiCache.forEach(p => {
-        mapPegawaiDelay[p.nip] = {
-          nip: p.nip,
-          nama: p.nama,
-          frekuensi: 0,
-          totalMenit: 0
-        };
-      });
+      let mapDelay = {};
+      daftarPegawaiCache.forEach(p => { mapDelay[p.nip] = { nip: p.nip, nama: p.nama, frekuensi: 0, totalMenit: 0 }; });
 
       databaseMentahAbsen.forEach(item => {
         if (!item.tanggal.includes("/")) return;
         const p = item.tanggal.split("/");
-        const thnFull = p[2].length === 2 ? "20" + p[2] : p[2];
-        const itemDateStr = `${thnFull}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
+        const dStr = `${p[2].length===2?"20"+p[2]:p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
 
-        if (itemDateStr >= tglAwal && itemDateStr <= tglAkhir) {
-          let menit = 0;
-          let stringKet = String(item.keterangan || "0").trim();
-          
-          if (stringKet !== "0" && stringKet !== "-" && !isNaN(stringKet)) {
-            menit = parseInt(stringKet);
-          }
-
+        if (dStr >= tglAwal && dStr <= tglAkhir) {
+          let menit = (!isNaN(item.keterangan) && item.keterangan !== "-" && item.keterangan !== "") ? parseInt(item.keterangan) : 0;
           if (menit > 0) {
-            if (!mapPegawaiDelay[item.nip]) {
-              mapPegawaiDelay[item.nip] = { nip: item.nip, nama: item.nama || "Unknown", frekuensi: 0, totalMenit: 0 };
-            }
-            mapPegawaiDelay[item.nip].frekuensi += 1;
-            mapPegawaiDelay[item.nip].totalMenit += menit;
+            if (!mapDelay[item.nip]) mapDelay[item.nip] = { nip: item.nip, nama: item.nama || "Unknown", frekuensi: 0, totalMenit: 0 };
+            mapDelay[item.nip].frekuensi += 1; mapDelay[item.nip].totalMenit += menit;
           }
         }
       });
 
-      rekapKeterlambatanProcessed = Object.values(mapPegawaiDelay);
+      rekapKeterlambatanProcessed = Object.values(mapDelay);
       urutkanTabelKeterlambatan();
     }
 
     function urutkanTabelKeterlambatan() {
       const rule = document.getElementById("sortDelayType").value;
       const tbody = document.getElementById("bodyRekapKeterlambatan");
-
       if (rekapKeterlambatanProcessed.length === 0) return;
 
       rekapKeterlambatanProcessed.sort((a, b) => {
@@ -787,27 +774,15 @@
         if (rule === "menit-asc") return a.totalMenit - b.totalMenit;
         if (rule === "frekuensi-desc") return b.frekuensi - a.frekuensi;
         if (rule === "frekuensi-asc") return a.frekuensi - b.frekuensi;
-        if (rule === "nama-asc") return a.nama.localeCompare(b.nama);
-        return 0;
+        return a.nama.localeCompare(b.nama);
       });
 
-      tbody.innerHTML = "";
-
-      const dataAdaKeterlambatan = rekapKeterlambatanProcessed.filter(x => x.totalMenit > 0);
-
-      if (dataAdaKeterlambatan.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" class="text-center" style="color:var(--success); padding:20px; font-weight:bold;">Alhamdulillah! Tidak ada riwayat pegawai yang terlambat pada periode rentang tanggal ini.</td></tr>';
-        return;
-      }
-
-      dataAdaKeterlambatan.forEach(item => {
+      const dataAda = rekapKeterlambatanProcessed.filter(x => x.totalMenit > 0);
+      tbody.innerHTML = dataAda.length === 0 ? '<tr><td colspan="4" class="text-center" style="color:var(--success); font-weight:bold;">Alhamdulillah! Tidak ada riwayat pegawai terlambat pada periode ini.</td></tr>' : "";
+      
+      dataAda.forEach(item => {
         const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td><code>${item.nip}</code></td>
-          <td><strong>${item.nama}</strong></td>
-          <td class="text-center" style="color:var(--orange-dark); font-weight:700;">${item.frekuensi} Kali</td>
-          <td class="text-center" style="color:var(--danger); font-weight:700;">${item.totalMenit} Menit</td>
-        `;
+        tr.innerHTML = `<td><code>${item.nip}</code></td><td><strong>${item.nama}</strong></td><td class="text-center" style="color:var(--orange-dark); font-weight:700;">${item.frekuensi} Kali</td><td class="text-center" style="color:var(--danger); font-weight:700;">${item.totalMenit} Menit</td>`;
         tbody.appendChild(tr);
       });
     }
@@ -815,115 +790,29 @@
     let sortToggleHeaderState = true;
     function toggleSortViaHeader(tipe) {
       sortToggleHeaderState = !sortToggleHeaderState;
-      const selectorElement = document.getElementById("sortDelayType");
-      if (tipe === 'frekuensi') {
-        selectorElement.value = sortToggleHeaderState ? "frekuensi-desc" : "frekuensi-asc";
-      } else if (tipe === 'menit') {
-        selectorElement.value = sortToggleHeaderState ? "menit-desc" : "menit-asc";
-      }
+      document.getElementById("sortDelayType").value = tipe === 'frekuensi' ? (sortToggleHeaderState ? "frekuensi-desc" : "frekuensi-asc") : (sortToggleHeaderState ? "menit-desc" : "menit-asc");
       urutkanTabelKeterlambatan();
     }
 
     function exportKeExcelLaporan() {
       if (dataLaporanSekarang.length === 0) { alert("Tidak ada data laporan aktif!"); return; }
-      const tipeFilter = document.getElementById("filterType").value.toUpperCase();
-      
-      let excelTemplate = `
-        <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
-        <head><meta charset="UTF-8">
-          <style>
-            body { font-family: 'Segoe UI', Arial, sans-serif; }
-            .judul { font-size: 16px; font-weight: bold; text-align: center; color: #1a365d; }
-            th { background-color: #2b6cb0; color: #ffffff; font-weight: bold; text-align: center; border: 1px solid #cbd5e0; padding: 8px; }
-            td { border: 1px solid #e2e8f0; padding: 6px; vertical-align: middle; }
-            .text-center { text-align: center; }
-            .merah { color: #e53e3e; font-weight: bold; }
-            .hijau { color: #38a169; font-weight: bold; }
-            .oranye { color: #dd6b20; font-weight: bold; }
-          </style>
-        </head>
-        <body>
-          <table>
-            <tr><td colspan="10" class="judul">LAPORAN REKAPITULASI PRESENSI PEGAWAI KPU KOTA MALANG</td></tr>
-            <tr><td colspan="10"></td></tr>
-            <thead>
-              <tr>
-                <th>Tanggal</th>
-                <th>NIP Pegawai</th>
-                <th>Nama Lengkap Pegawai</th>
-                <th>Status Kehadiran</th>
-                <th>Jam Masuk</th>
-                <th>Jam Pulang</th>
-                <th>Keterangan Masuk</th>
-                <th>Keterangan Pulang</th>
-                <th>Link Foto Masuk</th>
-                <th>Link Foto Pulang</th>
-              </tr>
-            </thead>
-            <tbody>
-      `;
+      let excelTemplate = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="UTF-8"><style>body { font-family: sans-serif; } .judul { font-size: 16px; font-weight: bold; text-align: center; color: #1a365d; } th { background-color: #2b6cb0; color: white; font-weight: bold; border: 1px solid #cbd5e0; padding: 8px; } td { border: 1px solid #e2e8f0; padding: 6px; } .text-center { text-align: center; } .merah { color: red; font-weight: bold; } .hijau { color: green; font-weight: bold; } .oranye { color: orange; font-weight: bold; }</style></head><body><table><tr><td colspan="10" class="judul">LAPORAN REKAPITULASI PRESENSI PEGAWAI KPU KOTA MALANG</td></tr><tr><td colspan="10"></td></tr><thead><tr><th>Tanggal</th><th>NIP Pegawai</th><th>Nama Lengkap Pegawai</th><th>Status Kehadiran</th><th>Jam Masuk</th><th>Jam Pulang</th><th>Keterangan Masuk</th><th>Keterangan Pulang</th><th>Link Foto Masuk</th><th>Link Foto Pulang</th></tr></thead><tbody>`;
 
       dataLaporanSekarang.forEach(item => {
-        let clsMasuk = '';
-        let clsPulang = '';
-        
-        const jUpper = (item.jenis || "").trim().toUpperCase();
-        if (jUpper !== "WFO" && jUpper !== "WFH" && jUpper !== "WFA") {
-          clsMasuk = 'class="oranye"';
-          clsPulang = 'class="oranye"';
-        } else {
-          clsMasuk = item.kalkulasiMasuk.includes("Terlambat") ? 'class="merah"' : '';
-          clsPulang = item.kalkulasiPulang === "PSW" ? 'class="merah"' : (item.kalkulasiPulang === "Tepat Waktu" ? 'class="hijau"' : '');
-        }
+        let clsM = '', clsP = '';
+        if (!["WFO","WFH","WFA"].includes((item.jenis||"").toUpperCase())) { clsM = clsP = 'class="oranye"'; } 
+        else { clsM = item.kalkulasiMasuk.includes("Terlambat") ? 'class="merah"' : ''; clsP = item.kalkulasiPulang === "PSW" ? 'class="merah"' : (item.kalkulasiPulang === "Tepat Waktu" ? 'class="hijau"' : ''); }
 
-        excelTemplate += `
-          <tr>
-            <td class="text-center">${item.tanggal}</td>
-            <td class="text-center" style="mso-number-format:'\\@';">'${item.nip}</td>
-            <td><b>${item.nama}</b></td>
-            <td class="text-center">${item.jenis}</td>
-            <td class="text-center">${item.jamMasuk || '-'}</td>
-            <td class="text-center">${item.jamPulang || '-'}</td>
-            <td ${clsMasuk}>${item.kalkulasiMasuk}</td>
-            <td ${clsPulang}>${item.kalkulasiPulang}</td>
-            <td>${item.fotoMasuk || '-'}</td>
-            <td>${item.fotoPulang || '-'}</td>
-          </tr>
-        `;
+        excelTemplate += `<tr><td class="text-center">${item.tanggal}</td><td class="text-center" style="mso-number-format:'\\@';">'${item.nip}</td><td><b>${item.nama}</b></td><td class="text-center">${item.jenis}</td><td class="text-center">${item.jamMasuk || '-'}</td><td class="text-center">${item.jamPulang || '-'}</td><td ${clsM}>${item.kalkulasiMasuk}</td><td ${clsP}>${item.kalkulasiPulang}</td><td>${item.fotoMasuk || '-'}</td><td>${item.fotoPulang || '-'}</td></tr>`;
       });
 
       excelTemplate += `</tbody></table></body></html>`;
       const blob = new Blob([excelTemplate], { type: "application/vnd.ms-excel;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", `REKAP_PRESENSI_${tipeFilter}_${new Date().toISOString().slice(0,10)}.xls`);
+      link.href = URL.createObjectURL(blob);
+      link.setAttribute("download", `REKAP_PRESENSI_${document.getElementById("filterType").value.toUpperCase()}_${new Date().toISOString().slice(0,10)}.xls`);
       document.body.appendChild(link); link.click(); document.body.removeChild(link);
-    }
-
-    async function mergeManualAdmin() {}
-    
-    async function kirimManualAdmin() {
-      const nip = document.getElementById("inputPegawai").value, tanggal = document.getElementById("inputTanggal").value;
-      const jenis = document.getElementById("inputJenis").value, keterangan = document.getElementById("inputKeterangan").value;
-      if(!nip || !tanggal || !jenis) { alert("Lengkapi data kolom wajib!"); return; }
-      const pTerpilih = daftarPegawaiCache.find(p => p.nip === nip);
-      showLoading(true);
-      try {
-        const form = new FormData();
-        form.append("isAdminInput", "true"); form.append("adminOperator", adminAktif);
-        form.append("nip", nip); form.append("nama", pTerpilih.nama);
-        form.append("jabatan", pTerpilih.jabatan); form.append("atasan", pTerpilih.atasan);
-        form.append("tanggal", tanggal); form.append("jenis", jenis); form.append("keterangan", keterangan);
-        const res = await fetch(API, { method: "POST", body: form });
-        const data = await res.json();
-        if(data.result === "success") { 
-          alert(data.message); document.getElementById("inputTanggal").value = ""; document.getElementById("inputKeterangan").value = ""; document.getElementById("inputPegawai").value = ""; tarikLaporanAdmin();
-        }
-      } catch(e) { alert("Gagal menyimpan data."); } finally { showLoading(false); }
     }
   </script>
 </body>
 </html>
-
-```
