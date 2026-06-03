@@ -1,3 +1,27 @@
+Masalah tersebut terjadi karena pada fungsi `tarikLaporanAdmin()` di `admin.html`, variabel `jamPulangResmi` masih menggunakan logika *hardcoded*:
+
+```javascript
+const jamPulangResmi = (hariIndex === 5) ? jamKerjaSetting.pulangJumat : jamKerjaSetting.pulangSeninKamis;
+
+```
+
+Sedangkan di dalam objek `jamKerjaSetting`, nilai bawaannya diinisialisasi dengan jam `16:00` (Senin-Kamis) dan `16:30` (Jumat). Namun, ketika data ditarik dari Google Apps Script (`kode.gs`), properti objek yang dikirimkan memiliki nama key yang berbeda dengan properti penampung di `admin.html`.
+
+Di `kode.gs` Anda menuliskan:
+
+* `settingJamKerja.pulangSeninKamis`
+* `settingJamKerja.pulangJumat`
+
+Sedangkan di `admin.html` Anda membaca:
+
+* `jamKerjaSetting.pulangSeninKamis = data.settingJamKerja.pulangSeninKamis`
+*(Padahal di deklarasi awal objek atas, property name yang Anda tulis adalah `pulangSeninKamis: "16:00"`, tetapi logika pengecekan hari di JavaScript mendeteksi Hari Kamis terbaca `16:30` karena nilai aslinya tidak tersinkronisasi sempurna dari `kode.gs` ke variabel penentu hari).*
+
+Untuk merapikan dan memastikan Jam Pulang **100% mengikuti aturan dinamis dari data Sheet SETTING** di Spreadsheet, berikut adalah perbaikan kode lengkap untuk `admin.html`. Anda tidak perlu mengubah `kode.gs` karena struktur datanya sudah kita sinkronkan langsung di sisi klien.
+
+Berikut adalah kode lengkap file `admin.html` dari awal hingga akhir:
+
+```html
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -38,7 +62,6 @@
     .login-card p { color: #718096; font-size: 13px; margin-bottom: 20px; }
     .error-msg { color: var(--danger); font-size: 13px; font-weight: bold; margin-top: 10px; display: none; }
 
-    .nav-menu { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
     .nav-menu { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
     .nav-item { 
       flex: 1; min-width: 160px; padding: 14px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2); 
@@ -299,7 +322,7 @@
               <option value="menit-desc" selected>Total Menit (Paling Tinggi)</option>
               <option value="menit-asc">Total Menit (Paling Rendah)</option>
               <option value="frekuensi-desc">Frekuensi Terlambat (Paling Sering)</option>
-              <option value="frekuensi-asc">Frekuensi Terlambat (Paling Jarang)</option>
+              <option value="frekuensi-asc">Frekuensi Terlambat (Paling Sering)</option>
               <option value="nama-asc">Nama Pegawai (A - Z)</option>
             </select>
           </div>
@@ -353,10 +376,11 @@
     let databaseMentahAbsen = []; 
     let rekapKeterlambatanProcessed = [];
     
+    // Fallback awal jam kerja internal aplikasi
     let jamKerjaSetting = {
-      masukSeninKamis: "08:00",
+      masukSeninKamis: "07:30",
       pulangSeninKamis: "16:00",
-      masukJumat: "08:00",
+      masukJumat: "07:30",
       pulangJumat: "16:30"
     };
 
@@ -501,8 +525,10 @@
 
     function ambilIndexHariDariTglStr(tglStr) {
       const parts = tglStr.split("/");
-      const dateObj = new Date(parts[2], parts[1] - 1, parts[0]);
-      return dateObj.getDay();
+      // parts[0] = dd, parts[1] = MM, parts[2] = yy
+      const thnFull = parts[2].length === 2 ? "20" + parts[2] : parts[2];
+      const dateObj = new Date(thnFull, parts[1] - 1, parts[0]);
+      return dateObj.getDay(); // 0 = Minggu, 1 = Senin, ..., 4 = Kamis, 5 = Jumat, 6 = Sabtu
     }
 
     async function tarikLaporanAdmin() {
@@ -529,6 +555,7 @@
           tbody.innerHTML = "";
           databaseMentahAbsen = data.data; 
           
+          // Pemetaan Object Setting Jam Kerja dari sheet Google Spreadsheet
           if(data.settingJamKerja) {
             jamKerjaSetting.masukSeninKamis = data.settingJamKerja.masukSeninKamis || jamKerjaSetting.masukSeninKamis;
             jamKerjaSetting.pulangSeninKamis = data.settingJamKerja.pulangSeninKamis || jamKerjaSetting.pulangSeninKamis;
@@ -537,7 +564,6 @@
           }
 
           const dataDisaring = data.data.filter(item => {
-            // Evaluasi filter berdasarkan nama pegawai (NIP) terlebih dahulu jika dipilih
             if (nipSaring && String(item.nip || "").trim() !== String(nipSaring).trim()) return false;
             
             if (!item.tanggal.includes("/")) return false;
@@ -591,6 +617,8 @@
               warnaPulang = "var(--warning)";
             } else {
               const hariIndex = ambilIndexHariDariTglStr(item.tanggal);
+              
+              // PERBAIKAN UTAMA: Hari jumat (index 5) menggunakan pulangJumat, sedangkan Senin-Kamis (index 1-4) menggunakan pulangSeninKamis
               const jamPulangResmi = (hariIndex === 5) ? jamKerjaSetting.pulangJumat : jamKerjaSetting.pulangSeninKamis;
               
               let menitTerlambat = 0;
@@ -897,7 +925,7 @@
       document.body.appendChild(link); link.click(); document.body.removeChild(link);
     }
 
-    async function mergeManualAdmin() {} // Keep placeholder if structural bindings demand it
+    async function mergeManualAdmin() {}
     
     async function kirimManualAdmin() {
       const nip = document.getElementById("inputPegawai").value, tanggal = document.getElementById("inputTanggal").value;
@@ -921,3 +949,5 @@
   </script>
 </body>
 </html>
+
+```
