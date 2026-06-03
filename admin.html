@@ -331,12 +331,13 @@
         
         <label for="inputJenis">Status Ketidakhadiran / Jenis Presensi</label>
         <select id="inputJenis" onchange="adjustFormRequirement()">
-          <option value="CUTI">CUTI TAHUNAN / KHUSUS</option>
-          <option value="IJIN">IJIN KELUAR / DINAS LUAR</option>
-          <option value="SAKIT">SAKIT (DENGAN SURAT DOKTER)</option>
-          <option value="WFO">WORK FROM OFFICE (WFO)</option>
-          <option value="WFH">WORK FROM HOME (WFH)</option>
-        </select>
+  <option value="CUTI SAKIT">CUTI SAKIT</option>
+  <option value="CUTI TAHUNAN">CUTI TAHUNAN</option>
+  <option value="CUTI BESAR">CUTI BESAR</option>
+  <option value="CUTI MELAHIRKAN">CUTI MELAHIRKAN</option>
+  <option value="CUTI ALASAN PENTING">CUTI ALASAN PENTING</option>
+  <option value="CLTN">CLTN (Cuti Di Luar Tanggungan Negara)</option>
+</select>
 
         <div id="wrapper-opsional-jam" style="display: none; grid-template-columns: 1fr 1fr; gap: 10px;">
           <div>
@@ -358,7 +359,7 @@
     </div>
   </div>
 
-  <script>
+ <script>
     const API = "https://script.google.com/macros/s/AKfycbxl0fJC2790vwN9DYnr6xCXW_BBuMAIP0M7btnF4SIpwzAw4dV1hTMDP1f6k652sp4/exec";
     const adminAktif = "System Admin";
     let daftarPegawaiCache = [];
@@ -445,8 +446,8 @@
     }
 
     function adjustFormRequirement() {
-      const j = document.getElementById("inputJenis").value;
-      document.getElementById("wrapper-opsional-jam").style.display = (j === "WFO" || j === "WFH") ? "grid" : "none";
+      // Seluruh opsi baru adalah ketidakhadiran (Cuti/CLTN), penanda jam manual ditiadakan/sembunyikan
+      document.getElementById("wrapper-opsional-jam").style.display = "none";
     }
 
     async function muatDaftarPegawaiAdmin() {
@@ -490,7 +491,11 @@
     }
     function tutupPopUpFoto() { document.getElementById("imagePopUpModal").style.display = "none"; }
     function hitungMenitSelisih(wAwal, wAkhir) { return ((e, s) => (e[0]*60 + parseInt(e[1])) - (s[0]*60 + parseInt(s[1])))(wAkhir.split(":"), wAwal.split(":")); }
-    function ambilIndexHariDariTglStr(tglStr) { const p = tglStr.split("/"); return new Date((p[2].length===2?"20"+p[2]:p[2]), p[1]-1, p[0]).getDay(); }
+    function ambilIndexHariDariTglStr(tglStr) { 
+      let p = tglStr.split("/");
+      if(p[0].includes("-")) p = tglStr.split("-").reverse(); // Antisipasi format yyyy-mm-dd
+      return new Date((p[2].length===2?"20"+p[2]:p[2]), p[1]-1, p[0]).getDay(); 
+    }
 
     async function tarikLaporanAdmin() {
       const type = document.getElementById("filterType").value;
@@ -519,9 +524,14 @@
 
           const dataDisaring = data.data.filter(item => {
             if (nipSaring && String(item.nip || "").trim() !== String(nipSaring).trim()) return false;
-            if (!item.tanggal.includes("/")) return false;
-            const p = item.tanggal.split("/");
-            const itemDateStr = `${p[2].length===2?"20"+p[2]:p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
+            
+            let itemDateStr = "";
+            if (item.tanggal.includes("/")) {
+              const p = item.tanggal.split("/");
+              itemDateStr = `${p[2].length===2?"20"+p[2]:p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
+            } else {
+              itemDateStr = item.tanggal; // Format yyyy-MM-dd langsung dari INPUT_MANUAL
+            }
 
             if (type === "harian") return itemDateStr === tglAwal;
             if (type === "bulanan") return itemDateStr.startsWith(bulan);
@@ -549,7 +559,8 @@
             let txtPulang = "Belum Absen", warnaPulang = "inherit";
             const jenisUpper = (item.jenis || "").trim().toUpperCase();
 
-            if (jenisUpper !== "WFO" && jenisUpper !== "WFH" && jenisUpper !== "WFA") {
+            // Jika asalnya dari INPUT_MANUAL / beralasan ketidakhadiran resmi
+            if (!["WFO", "WFH", "WFA"].includes(jenisUpper)) {
               txtMasuk = item.jenis; txtPulang = item.jenis;
               warnaMasuk = "var(--warning)"; warnaPulang = "var(--warning)";
             } else {
@@ -569,8 +580,14 @@
             let bgBadge = "#edf2f7";
             if(jenisUpper === "WFO") bgBadge = "#c6f6d5; color: #22543d;";
             else if(jenisUpper === "WFH") bgBadge = "#feebc8; color: #744210;";
-            else if(jenisUpper === "WFA") bgBadge = "#e2e8f0; color: #4a5568;";
+            else if(["CUTI SAKIT","CUTI TAHUNAN","CUTI BESAR","CUTI MELAHIRKAN","CUTI ALASAN PENTING","CLTN"].includes(jenisUpper)) bgBadge = "#e9d8fd; color: #44337a;";
             else bgBadge = "#fed7d7; color: #742a2a;"; 
+
+            // HANYA data manual yang memunculkan tombol Aksi Pengelola (Edit & Hapus)
+            const aksiTombol = item.isManual ? `
+                <button class="btn-action btn-edit" onclick="pemicuEditLaporan('${item.rowId}')">✏️</button>
+                <button class="btn-action btn-delete" onclick="pemicuHapusLaporan('${item.rowId}')">❌</button>
+            ` : `<span style="color:#cbd5e0; font-size:11px;">🔒 Mobile-Absen</span>`;
 
             tr.innerHTML = `
               <td>${item.tanggal}</td>
@@ -583,10 +600,7 @@
               <td style="color:${warnaPulang}; font-weight:600;">${txtPulang}</td>
               <td class="text-center">${tagFotoMasuk}</td>
               <td class="text-center">${tagFotoPulang}</td>
-              <td class="text-center">
-                <button class="btn-action btn-edit" onclick="pemicuEditLaporan(${item.rowId})">✏️</button>
-                <button class="btn-action btn-delete" onclick="pemicuHapusLaporan(${item.rowId})">❌</button>
-              </td>
+              <td class="text-center">${aksiTombol}</td>
             `;
             tbody.appendChild(tr);
           });
@@ -594,38 +608,44 @@
       } catch(e) { console.error(e); } finally { showLoading(false); }
     }
 
-    // INTERFACE CRUD LOGIC MANAGEMENT
-    function pemicuEditLaporan(id) {
-      const target = databaseMentahAbsen.find(x => x.rowId === id);
+    // INTERFACE CRUD LOGIC MANAGEMENT (KHUSUS DATA MANUAL)
+    function pemicuEditLaporan(stringId) {
+      const target = databaseMentahAbsen.find(x => String(x.rowId) === String(stringId));
       if(!target) return;
       
       switchAdminTab('input');
-      document.getElementById("txtHeaderFormManual").innerText = "Form Modifikasi Data Absensi / Manual Pegawai";
-      document.getElementById("txtEditRowId").value = target.rowId;
+      document.getElementById("txtHeaderFormManual").innerText = "Modifikasi Ketidakhadiran Pegawai (INPUT_MANUAL)";
+      document.getElementById("txtEditRowId").value = target.rowId; // Berisi String ID_INPUT unik
       document.getElementById("inputPegawai").value = target.nip;
-      document.getElementById("inputJenis").value = ["WFO","WFH","CUTI","SAKIT","IJIN"].includes(target.jenis) ? target.jenis : "IJIN";
       
-      const p = target.tanggal.split("/");
-      document.getElementById("inputTanggal").value = `${p[2].length===2?"20"+p[2]:p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
+      // Map jenis presensi yang sesuai
+      document.getElementById("inputJenis").value = target.jenis;
+      
+      let formattedDate = "";
+      if (target.tanggal.includes("/")) {
+        const p = target.tanggal.split("/");
+        formattedDate = `${p[2].length===2?"20"+p[2]:p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
+      } else {
+        formattedDate = target.tanggal;
+      }
+      document.getElementById("inputTanggal").value = formattedDate;
       
       adjustFormRequirement();
-      document.getElementById("inputJamMasuk").value = target.jamMasuk !== "-" ? target.jamMasuk : "";
-      document.getElementById("inputJamPulang").value = target.jamPulang !== "-" ? target.jamPulang : "";
-      document.getElementById("inputKeterangan").value = (target.uraian_tugas && target.uraian_tugas !== "-") ? target.uraian_tugas : target.keterangan;
+      document.getElementById("inputKeterangan").value = target.keterangan !== "0" ? target.keterangan : "";
       
       document.getElementById("btnSubmitManual").innerText = "SIMPAN PERUBAHAN DATA";
       document.getElementById("btnCancelEdit").style.display = "block";
     }
 
-    async function pemicuHapusLaporan(id) {
-      if(!confirm("Apakah Anda yakin ingin menghapus baris absensi ini secara permanen dari sistem spreadsheet?")) return;
+    async function pemicuHapusLaporan(stringId) {
+      if(!confirm("Apakah Anda yakin ingin menghapus baris ketidakhadiran ini secara permanen dari sheet INPUT_MANUAL?")) return;
       showLoading(true);
       try {
-        const res = await fetch(API, { method: "POST", body: new URLSearchParams({ action: "crud_manual", ops: "DELETE", rowId: id }) });
+        const res = await fetch(API, { method: "POST", body: new URLSearchParams({ action: "crud_manual", ops: "DELETE", rowId: stringId }) });
         const data = await res.json();
         alert(data.message);
         tarikLaporanAdmin();
-      } catch(e) { alert("Gagal mengeksekusi operasi hapus."); } finally { showLoading(false); }
+      } catch(e) { alert("Gagal mengeksekusi operasi hapus data manual."); } finally { showLoading(false); }
     }
 
     function resetFormManual() {
@@ -634,9 +654,7 @@
       document.getElementById("inputPegawai").value = "";
       document.getElementById("inputTanggal").value = "";
       document.getElementById("inputKeterangan").value = "";
-      document.getElementById("inputJamMasuk").value = "";
-      document.getElementById("inputJamPulang").value = "";
-      document.getElementById("inputJenis").value = "CUTI";
+      document.getElementById("inputJenis").value = "CUTI TAHUNAN";
       adjustFormRequirement();
       document.getElementById("btnSubmitManual").innerText = "SIMPAN DATA ABSENSI";
       document.getElementById("btnCancelEdit").style.display = "none";
@@ -647,7 +665,7 @@
       const tanggal = document.getElementById("inputTanggal").value;
       const jenis = document.getElementById("inputJenis").value;
       const keterangan = document.getElementById("inputKeterangan").value;
-      const editRowId = document.getElementById("txtEditRowId").value;
+      const editRowId = document.getElementById("txtEditRowId").value; // Berisi ID_INPUT unik jika mode edit
 
       if(!nip || !tanggal) { alert("Kolom Pegawai dan Tanggal wajib ditentukan!"); return; }
       const p = daftarPegawaiCache.find(x => x.nip === nip);
@@ -663,16 +681,8 @@
       form.append("atasan", p.atasan);
       form.append("tanggal", tanggal);
       form.append("jenis", jenis);
-      
-      if(jenis === "WFO" || jenis === "WFH") {
-        form.append("jamMasuk", document.getElementById("inputJamMasuk").value || "07:30");
-        form.append("jamPulang", document.getElementById("inputJamPulang").value || "16:00");
-        form.append("uraian_tugas", keterangan);
-        form.append("output", "Manual Admin Entry");
-        form.append("keterangan", "0");
-      } else {
-        form.append("keterangan", keterangan || jenis);
-      }
+      form.append("keterangan", keterangan);
+      form.append("adminActive", adminAktif); // Menyimpan nama admin penginput
 
       showLoading(true);
       try {
@@ -683,8 +693,10 @@
           resetFormManual();
           switchAdminTab('laporan');
           tarikLaporanAdmin();
+        } else {
+          alert(data.message);
         }
-      } catch(e) { alert("Gagal memproses pengiriman data manual."); } finally { showLoading(false); }
+      } catch(e) { alert("Gagal memproses pengiriman data ke INPUT_MANUAL."); } finally { showLoading(false); }
     }
 
     // FUNCTIONALITY PANEL KINERJA & KETERLAMBATAN
@@ -714,13 +726,18 @@
       }
 
       const disaring = databaseMentahAbsen.filter(item => {
-        if (String(item.nip).trim() !== String(nip).trim() || !item.tanggal.includes("/")) return false;
-        const p = item.tanggal.split("/");
-        const dStr = `${p[2].length===2?"20"+p[2]:p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
+        if (String(item.nip).trim() !== String(nip).trim()) return false;
+        let dStr = "";
+        if (item.tanggal.includes("/")) {
+          const p = item.tanggal.split("/");
+          dStr = `${p[2].length===2?"20"+p[2]:p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
+        } else {
+          dStr = item.tanggal;
+        }
         return dStr >= tglAwal && dStr <= tglAkhir;
       }).sort((a,b) => a.tanggal.split('/').reverse().join('').localeCompare(b.tanggal.split('/').reverse().join('')));
 
-      tbody.innerHTML = disaring.length === 0 ? '<tr><td colspan="3" class="text-center">Tidak ada catatan performa.</td></tr>' : "";
+      tbody.innerHTML = disaring.length === 0 ? '<tr><td colspan="3" class="text-center">Tidak ada catatan performa / ketidakhadiran.</td></tr>' : "";
       disaring.forEach(item => {
         const tr = document.createElement("tr");
         tr.innerHTML = `
@@ -747,9 +764,13 @@
       daftarPegawaiCache.forEach(p => { mapDelay[p.nip] = { nip: p.nip, nama: p.nama, frekuensi: 0, totalMenit: 0 }; });
 
       databaseMentahAbsen.forEach(item => {
-        if (!item.tanggal.includes("/")) return;
-        const p = item.tanggal.split("/");
-        const dStr = `${p[2].length===2?"20"+p[2]:p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
+        let dStr = "";
+        if (item.tanggal.includes("/")) {
+          const p = item.tanggal.split("/");
+          dStr = `${p[2].length===2?"20"+p[2]:p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
+        } else {
+          dStr = item.tanggal;
+        }
 
         if (dStr >= tglAwal && dStr <= tglAkhir) {
           let menit = (!isNaN(item.keterangan) && item.keterangan !== "-" && item.keterangan !== "") ? parseInt(item.keterangan) : 0;
