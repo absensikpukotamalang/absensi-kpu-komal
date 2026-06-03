@@ -285,8 +285,8 @@
     }
 
     .custom-modal-title {
-      font-size: 36px;
-      font-weight: 800;
+      font-size: 36px; /* 1.5x Lebih Besar */
+      font-weight: 800; /* Bold/Tebal */
       margin-bottom: 16px;
       letter-spacing: -0.5px;
     }
@@ -482,6 +482,8 @@
         <input type="text" id="cekNip" placeholder="Ketik NIP Anda untuk konfirmasi" style="padding: 12px 16px; font-size: 18px;" />
       </div>
 
+      <div id="cekError" style="display: none; background: #fee2e2; color: #991b1b; padding: 14px; border-radius: 14px; font-size: 18px; font-weight: 700; margin-bottom: 15px; border: 2px solid #f87171;"></div>
+
       <div style="display: flex; gap: 10px; margin-bottom: 15px;">
         <button type="button" class="btn-success" onclick="prosesCekAbsen()" style="font-size: 20px; padding: 14px 10px;">CARI DATA</button>
         <button type="button" class="btn-secondary" onclick="tutupModalCekAbsen()" style="font-size: 20px; padding: 14px 10px; background: #9ca3af; color: white;">BATAL</button>
@@ -528,14 +530,14 @@
     const closedMessage = document.getElementById("closedMessage");
     const mainFormBox = document.getElementById("mainFormBox");
     
-    // Inisialisasi Elemen Jendela Kustom
+    // Inisialisasi Elemen Jendela Kustom Notifikasi
     const customModal = document.getElementById("customModal");
     const modalBox = document.getElementById("modalBox");
     const modalTitle = document.getElementById("modalTitle");
     const modalMessage = document.getElementById("modalMessage");
     const modalBtn = document.getElementById("modalBtn");
 
-    // Elemen Jendela Cek Absen
+    // Inisialisasi Elemen Jendela Cek Absen
     const modalCekAbsenOverlay = document.getElementById("modalCekAbsenOverlay");
     const cekNama = document.getElementById("cekNama");
     const cekNip = document.getElementById("cekNip");
@@ -793,7 +795,6 @@
         pegawai = data.pegawai || [];
         config = data.setting || {};
 
-        // Reset dropdown utama dan dropdown modal cek absen
         nama.innerHTML = '<option value="">-- Pilih Nama --</option>';
         cekNama.innerHTML = '<option value="">-- Pilih Nama --</option>';
         
@@ -803,7 +804,7 @@
           o.textContent = p.nama;
           nama.appendChild(o);
 
-          // Salin opsional ke modal cek absen
+          // Salin data ke dropdown modal cek absen
           const oCek = document.createElement("option");
           oCek.value = p.nama;
           oCek.textContent = p.nama;
@@ -1029,12 +1030,14 @@
     }
 
     // =====================================================
-    // FITUR ENGINE: CEK ABSENSI HARI INI VIA POP-UP
+    // MANAJEMEN ENGINE: MODAL CEK ABSENSI HARI INI
     // =====================================================
     function bukaModalCekAbsen() {
       resetSessionTimer();
       cekNama.value = "";
       cekNip.value = "";
+      document.getElementById("cekError").style.display = "none";
+      document.getElementById("cekError").innerText = "";
       cekResultContainer.style.display = "none";
       modalCekAbsenOverlay.style.display = "flex";
     }
@@ -1048,20 +1051,34 @@
         resetSessionTimer();
         const inputNama = cekNama.value;
         const inputNip = cekNip.value.trim();
+        const errorBox = document.getElementById("cekError");
+
+        // Bersihkan status error & kontainer tabel hasil sebelumnya
+        errorBox.style.display = "none";
+        errorBox.innerText = "";
+        cekResultContainer.style.display = "none";
 
         if (!inputNama) {
-          tampilkanDialog("Validasi Cek Absen", "Silakan pilih nama Anda.", "warning");
+          errorBox.innerText = "⚠️ Silakan pilih nama Anda terlebih dahulu.";
+          errorBox.style.display = "block";
           return;
         }
 
-        // Cari data pegawai internal untuk kecocokan NIP mandatori
+        if (!inputNip) {
+          errorBox.innerText = "⚠️ Mohon masukkan NIP Anda.";
+          errorBox.style.display = "block";
+          return;
+        }
+
+        // Validasi silang NIP dengan database internal memori aplikasi
         const p = pegawai.find(x => x.nama === inputNama);
         if (!p || p.nip !== inputNip) {
-          tampilkanDialog("Akses Ditolak", "NIP yang dimasukkan tidak sesuai dengan nama pegawai yang dipilih!", "error");
+          errorBox.innerText = "❌ NIP yang dimasukkan tidak sesuai dengan nama pegawai yang dipilih!";
+          errorBox.style.display = "block";
           return;
         }
 
-        // Tampilkan status memuat data di dalam container tabel
+        // Buka wadah tabel pengisian jika verifikasi lokal sukses
         cekResultContainer.style.display = "block";
         document.getElementById("resTanggal").innerText = "Memuat...";
         document.getElementById("resJenis").innerText = "Memuat...";
@@ -1069,15 +1086,15 @@
         document.getElementById("resJamPulang").innerText = "Memuat...";
         document.getElementById("resTerlambat").innerText = "Memuat...";
 
-        // Ambil data rekap absensi dari Apps Script (doGet dengan action=rekap)
+        // Ambil data dari Apps Script menggunakan API rekap
         const URL_REKAP = API + "?action=rekap";
         const res = await fetch(URL_REKAP, { cache: "no-store" });
-        if (!res.ok) throw new Error("Gagal terhubung ke server rekap data.");
+        if (!res.ok) throw new Error("Gagal terhubung ke server database.");
 
         const data = await res.json();
-        if (data.result !== "success") throw new Error(data.message || "Terjadi kesalahan rekap.");
+        if (data.result !== "success") throw new Error(data.message || "Gagal memproses data rekap.");
 
-        // Dapatkan string tanggal hari ini dalam format dd/MM/yy
+        // Dapatkan string penanggalan hari ini (format Asia/Jakarta 'dd/MM/yy')
         const hariIniStr = new Intl.DateTimeFormat("id-ID", {
           day: "2-digit",
           month: "2-digit",
@@ -1085,7 +1102,7 @@
           timeZone: "Asia/Jakarta"
         }).format(new Date());
 
-        // Cari record absensi milik pegawai tersebut pada tanggal hari ini
+        // Cari data presensi pegawai bersangkutan khusus hari ini
         const listAbsen = data.absensi || [];
         const absenHariIni = listAbsen.find(x => x.nip === inputNip && x.tanggal === hariIniStr);
 
@@ -1098,7 +1115,7 @@
           return;
         }
 
-        // Render data absen ke komponen tabel kustom
+        // Tampilkan hasil pencarian di tabel UI pop-up
         document.getElementById("resTanggal").innerText = absenHariIni.tanggal || "-";
         document.getElementById("resJenis").innerText = absenHariIni.jenis || "-";
         document.getElementById("resJamMasuk").innerText = (absenHariIni.jam_masuk) ? absenHariIni.jam_masuk + " WIB" : "-";
@@ -1110,7 +1127,9 @@
       } catch (err) {
         console.error(err);
         cekResultContainer.style.display = "none";
-        tampilkanDialog("Gagal Cek Absen", err.message, "error");
+        const errorBox = document.getElementById("cekError");
+        errorBox.innerText = "❌ Gagal Ambil Data: " + err.message;
+        errorBox.style.display = "block";
       }
     }
 
