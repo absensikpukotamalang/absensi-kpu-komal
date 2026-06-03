@@ -224,6 +224,11 @@
       color: #ffffff;
     }
 
+    .btn-info {
+      background: #3b82f6;
+      color: #ffffff;
+    }
+
     .submit-info {
       margin-top: 18px;
       text-align: center;
@@ -268,14 +273,20 @@
       animation: modalPop 0.23s ease-out;
     }
 
+    /* Penyesuaian khusus modal cek absen agar lebih lebar */
+    .custom-modal-box.wide {
+      max-width: 580px;
+      text-align: left;
+    }
+
     @keyframes modalPop {
       from { transform: scale(0.92); opacity: 0; }
       to { transform: scale(1); opacity: 1; }
     }
 
     .custom-modal-title {
-      font-size: 36px; /* 1.5x Lebih Besar */
-      font-weight: 800; /* Bold/Tebal */
+      font-size: 36px;
+      font-weight: 800;
       margin-bottom: 16px;
       letter-spacing: -0.5px;
     }
@@ -284,6 +295,7 @@
     .custom-modal-box.success .custom-modal-title { color: #15834f; }
     .custom-modal-box.error .custom-modal-title { color: #c73d3d; }
     .custom-modal-box.warning .custom-modal-title { color: #d97706; }
+    .custom-modal-box.info .custom-modal-title { color: #3b82f6; }
 
     .custom-modal-message {
       font-size: 22px;
@@ -311,6 +323,25 @@
     .custom-modal-btn:active {
       transform: scale(0.97);
     }
+
+    /* Style Komponen Tabel Hasil Cek Absen */
+    .hasil-absen-box {
+      margin-top: 15px;
+      background: #f3f4f6;
+      border-radius: 16px;
+      padding: 16px;
+    }
+    .hasil-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #e5e7eb;
+      font-size: 20px;
+      font-weight: 700;
+    }
+    .hasil-row:last-child { border-bottom: none; }
+    .hasil-label { color: #6b7280; }
+    .hasil-value { color: #111827; text-align: right; }
 
     @media (min-width: 640px) {
       body {
@@ -418,6 +449,10 @@
         <button type="button" class="btn-secondary" onclick="ulangFoto()">ULANG FOTO</button>
         <button type="button" class="btn-success" onclick="kirimAbsen()">KIRIM ABSEN</button>
       </div>
+      
+      <div style="margin-top: 12px;">
+        <button type="button" class="btn-info" onclick="bukaModalCekAbsen()">CEK ABSENSI HARI INI</button>
+      </div>
 
       <div class="submit-info" id="submitInfo"></div>
     </div>
@@ -428,6 +463,39 @@
       <div class="custom-modal-title" id="modalTitle">Pemberitahuan</div>
       <div class="custom-modal-message" id="modalMessage">Pesan sistem.</div>
       <button type="button" class="custom-modal-btn" id="modalBtn">OK</button>
+    </div>
+  </div>
+
+  <div class="custom-modal-overlay" id="modalCekAbsenOverlay">
+    <div class="custom-modal-box wide info">
+      <div class="custom-modal-title" style="text-align: center;">Cek Absensi Hari Ini</div>
+      
+      <div class="field">
+        <label for="cekNama" style="color: #1f2937; font-size: 20px;">NAMA</label>
+        <select id="cekNama" style="padding: 12px 16px; font-size: 18px;">
+          <option value="">-- Pilih Nama --</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="cekNip" style="color: #1f2937; font-size: 20px;">MASUKKAN NIP</label>
+        <input type="text" id="cekNip" placeholder="Ketik NIP Anda untuk konfirmasi" style="padding: 12px 16px; font-size: 18px;" />
+      </div>
+
+      <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+        <button type="button" class="btn-success" onclick="prosesCekAbsen()" style="font-size: 20px; padding: 14px 10px;">CARI DATA</button>
+        <button type="button" class="btn-secondary" onclick="tutupModalCekAbsen()" style="font-size: 20px; padding: 14px 10px; background: #9ca3af; color: white;">BATAL</button>
+      </div>
+
+      <div id="cekResultContainer" style="display: none;">
+        <div class="hasil-absen-box">
+          <div class="hasil-row"><span class="hasil-label">Tanggal:</span><span class="hasil-value" id="resTanggal">-</span></div>
+          <div class="hasil-row"><span class="hasil-label">Jenis:</span><span class="hasil-value" id="resJenis">-</span></div>
+          <div class="hasil-row"><span class="hasil-label">Jam Masuk:</span><span class="hasil-value" id="resJamMasuk">-</span></div>
+          <div class="hasil-row"><span class="hasil-label">Jam Pulang:</span><span class="hasil-value" id="resJamPulang">-</span></div>
+          <div class="hasil-row"><span class="hasil-label">Terlambat:</span><span class="hasil-value" id="resTerlambat">-</span></div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -466,6 +534,12 @@
     const modalTitle = document.getElementById("modalTitle");
     const modalMessage = document.getElementById("modalMessage");
     const modalBtn = document.getElementById("modalBtn");
+
+    // Elemen Jendela Cek Absen
+    const modalCekAbsenOverlay = document.getElementById("modalCekAbsenOverlay");
+    const cekNama = document.getElementById("cekNama");
+    const cekNip = document.getElementById("cekNip");
+    const cekResultContainer = document.getElementById("cekResultContainer");
 
     function updateNetworkInfo() {
       networkInfo.innerText = navigator.onLine ? "Online" : "Offline";
@@ -719,12 +793,21 @@
         pegawai = data.pegawai || [];
         config = data.setting || {};
 
+        // Reset dropdown utama dan dropdown modal cek absen
         nama.innerHTML = '<option value="">-- Pilih Nama --</option>';
+        cekNama.innerHTML = '<option value="">-- Pilih Nama --</option>';
+        
         pegawai.forEach(p => {
           const o = document.createElement("option");
           o.value = p.nama;
           o.textContent = p.nama;
           nama.appendChild(o);
+
+          // Salin opsional ke modal cek absen
+          const oCek = document.createElement("option");
+          oCek.value = p.nama;
+          oCek.textContent = p.nama;
+          cekNama.appendChild(oCek);
         });
 
         submitInfo.innerText = "";
@@ -942,6 +1025,92 @@
         console.error(err);
         submitInfo.innerText = "Gagal: " + err.message;
         tampilkanDialog("Gagal Submit Absen", err.message, "error");
+      }
+    }
+
+    // =====================================================
+    // FITUR ENGINE: CEK ABSENSI HARI INI VIA POP-UP
+    // =====================================================
+    function bukaModalCekAbsen() {
+      resetSessionTimer();
+      cekNama.value = "";
+      cekNip.value = "";
+      cekResultContainer.style.display = "none";
+      modalCekAbsenOverlay.style.display = "flex";
+    }
+
+    function tutupModalCekAbsen() {
+      modalCekAbsenOverlay.style.display = "none";
+    }
+
+    async function prosesCekAbsen() {
+      try {
+        resetSessionTimer();
+        const inputNama = cekNama.value;
+        const inputNip = cekNip.value.trim();
+
+        if (!inputNama) {
+          tampilkanDialog("Validasi Cek Absen", "Silakan pilih nama Anda.", "warning");
+          return;
+        }
+
+        // Cari data pegawai internal untuk kecocokan NIP mandatori
+        const p = pegawai.find(x => x.nama === inputNama);
+        if (!p || p.nip !== inputNip) {
+          tampilkanDialog("Akses Ditolak", "NIP yang dimasukkan tidak sesuai dengan nama pegawai yang dipilih!", "error");
+          return;
+        }
+
+        // Tampilkan status memuat data di dalam container tabel
+        cekResultContainer.style.display = "block";
+        document.getElementById("resTanggal").innerText = "Memuat...";
+        document.getElementById("resJenis").innerText = "Memuat...";
+        document.getElementById("resJamMasuk").innerText = "Memuat...";
+        document.getElementById("resJamPulang").innerText = "Memuat...";
+        document.getElementById("resTerlambat").innerText = "Memuat...";
+
+        // Ambil data rekap absensi dari Apps Script (doGet dengan action=rekap)
+        const URL_REKAP = API + "?action=rekap";
+        const res = await fetch(URL_REKAP, { cache: "no-store" });
+        if (!res.ok) throw new Error("Gagal terhubung ke server rekap data.");
+
+        const data = await res.json();
+        if (data.result !== "success") throw new Error(data.message || "Terjadi kesalahan rekap.");
+
+        // Dapatkan string tanggal hari ini dalam format dd/MM/yy
+        const hariIniStr = new Intl.DateTimeFormat("id-ID", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "2-digit",
+          timeZone: "Asia/Jakarta"
+        }).format(new Date());
+
+        // Cari record absensi milik pegawai tersebut pada tanggal hari ini
+        const listAbsen = data.absensi || [];
+        const absenHariIni = listAbsen.find(x => x.nip === inputNip && x.tanggal === hariIniStr);
+
+        if (!absenHariIni) {
+          document.getElementById("resTanggal").innerText = hariIniStr;
+          document.getElementById("resJenis").innerText = "Belum Ada";
+          document.getElementById("resJamMasuk").innerText = "-";
+          document.getElementById("resJamPulang").innerText = "-";
+          document.getElementById("resTerlambat").innerText = "-";
+          return;
+        }
+
+        // Render data absen ke komponen tabel kustom
+        document.getElementById("resTanggal").innerText = absenHariIni.tanggal || "-";
+        document.getElementById("resJenis").innerText = absenHariIni.jenis || "-";
+        document.getElementById("resJamMasuk").innerText = (absenHariIni.jam_masuk) ? absenHariIni.jam_masuk + " WIB" : "-";
+        document.getElementById("resJamPulang").innerText = (absenHariIni.jam_pulang) ? absenHariIni.jam_pulang + " WIB" : "-";
+        
+        const menitTerlambat = Number(absenHariIni.terlambat || 0);
+        document.getElementById("resTerlambat").innerText = (menitTerlambat > 0) ? menitTerlambat + " Menit" : "Tepat Waktu";
+
+      } catch (err) {
+        console.error(err);
+        cekResultContainer.style.display = "none";
+        tampilkanDialog("Gagal Cek Absen", err.message, "error");
       }
     }
 
