@@ -39,6 +39,7 @@
     .error-msg { color: var(--danger); font-size: 13px; font-weight: bold; margin-top: 10px; display: none; }
 
     .nav-menu { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+    .nav-menu { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
     .nav-item { 
       flex: 1; min-width: 160px; padding: 14px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2); 
       border-radius: 12px; text-align: center; font-weight: bold; cursor: pointer; transition: all 0.2s; 
@@ -168,12 +169,22 @@
       <div class="card view-panel" id="panel-laporan" style="display: block;">
         <h3>Saringan Data Rekapitulasi</h3>
         
-        <label for="filterType">Metode Penarikan</label>
-        <select id="filterType" onchange="toggleFilterFields()">
-          <option value="harian" selected>Laporan Harian</option>
-          <option value="bulanan">Laporan Bulanan</option>
-          <option value="custom">Kustom Rentang Tanggal (Custom Date)</option>
-        </select>
+        <div class="filter-group" style="margin-bottom: 10px;">
+          <div>
+            <label for="filterNamaPegawai">Filter Nama Pegawai</label>
+            <select id="filterNamaPegawai">
+              <option value="">-- Semua Pegawai --</option>
+            </select>
+          </div>
+          <div>
+            <label for="filterType">Metode Penarikan</label>
+            <select id="filterType" onchange="toggleFilterFields()">
+              <option value="harian" selected>Laporan Harian</option>
+              <option value="bulanan">Laporan Bulanan</option>
+              <option value="custom">Kustom Rentang Tanggal (Custom Date)</option>
+            </select>
+          </div>
+        </div>
 
         <div class="filter-group">
           <div id="div-tglAwal" style="display:block;">
@@ -385,6 +396,7 @@
       document.getElementById("filterTglAwal").value = tglHariIni;
       document.getElementById("filterBulan").value = blnHariIni;
       document.getElementById("filterType").value = "harian";
+      document.getElementById("filterNamaPegawai").value = "";
       
       document.getElementById("kinerjaTglAwal").value = tglHariIni;
       document.getElementById("kinerjaTglAkhir").value = tglHariIni;
@@ -439,15 +451,20 @@
         if(data.result === "success") {
           daftarPegawaiCache = data.pegawai;
           
-          const select = document.getElementById("inputPegawai");
+          const selectLapor = document.getElementById("filterNamaPegawai");
+          const selectManual = document.getElementById("inputPegawai");
           const selectKiner = document.getElementById("kinerjaPegawai");
           
-          select.innerHTML = '<option value="">-- Pilih Pegawai --</option>';
+          selectLapor.innerHTML = '<option value="">-- Semua Pegawai --</option>';
+          selectManual.innerHTML = '<option value="">-- Pilih Pegawai --</option>';
           selectKiner.innerHTML = '<option value="">-- Pilih Pegawai --</option>';
           
           daftarPegawaiCache.forEach(p => {
+            const optLapor = document.createElement("option"); optLapor.value = p.nip; optLapor.textContent = `${p.nama} (${p.nip})`;
+            selectLapor.appendChild(optLapor);
+
             const opt1 = document.createElement("option"); opt1.value = p.nip; opt1.textContent = `${p.nama} (${p.nip})`;
-            select.appendChild(opt1);
+            selectManual.appendChild(opt1);
             
             const opt2 = document.createElement("option"); opt2.value = p.nip; opt2.textContent = `${p.nama} (${p.nip})`;
             selectKiner.appendChild(opt2);
@@ -493,6 +510,7 @@
       const tglAwal = document.getElementById("filterTglAwal").value;
       const tglAkhir = document.getElementById("filterTglAkhir").value;
       const bulan = document.getElementById("filterBulan").value;
+      const nipSaring = document.getElementById("filterNamaPegawai").value;
 
       let paramQuery = `?mode=admin_laporan&type=${type}`;
       if (!tglAwal && (type === "harian" || type === "custom")) { alert("Pilih tanggal awal!"); return; }
@@ -519,6 +537,9 @@
           }
 
           const dataDisaring = data.data.filter(item => {
+            // Evaluasi filter berdasarkan nama pegawai (NIP) terlebih dahulu jika dipilih
+            if (nipSaring && String(item.nip || "").trim() !== String(nipSaring).trim()) return false;
+            
             if (!item.tanggal.includes("/")) return false;
             const p = item.tanggal.split("/");
             const thnFull = p[2].length === 2 ? "20" + p[2] : p[2];
@@ -700,9 +721,6 @@
       });
     }
 
-    // =====================================================
-    // LOGIKA PROSES REKAP KETERLAMBATAN BARU
-    // =====================================================
     function prosesRekapKeterlambatan() {
       const tglAwal = document.getElementById("delayTglAwal").value;
       const tglAkhir = document.getElementById("delayTglAkhir").value;
@@ -716,7 +734,6 @@
         return;
       }
 
-      // 1. Grouping map berdasarkan pegawai di data cache untuk memastikan semua nama terdaftar masuk perhitungan
       let mapPegawaiDelay = {};
       daftarPegawaiCache.forEach(p => {
         mapPegawaiDelay[p.nip] = {
@@ -727,7 +744,6 @@
         };
       });
 
-      // 2. Loop filtering rekap keterlambatan berdasarkan rentang tanggal
       databaseMentahAbsen.forEach(item => {
         if (!item.tanggal.includes("/")) return;
         const p = item.tanggal.split("/");
@@ -743,7 +759,6 @@
           }
 
           if (menit > 0) {
-            // Jika NIP pegawai tidak ada di cache internal pegawai, buat objek dinamis baru
             if (!mapPegawaiDelay[item.nip]) {
               mapPegawaiDelay[item.nip] = { nip: item.nip, nama: item.nama || "Unknown", frekuensi: 0, totalMenit: 0 };
             }
@@ -753,10 +768,7 @@
         }
       });
 
-      // Konversi objek Map kelompok data ke Array
       rekapKeterlambatanProcessed = Object.values(mapPegawaiDelay);
-
-      // Jalankan fungsi sorting visual tabel
       urutkanTabelKeterlambatan();
     }
 
@@ -777,7 +789,6 @@
 
       tbody.innerHTML = "";
 
-      // Cari rekap yang memiliki riwayat keterlambatan (>0)
       const dataAdaKeterlambatan = rekapKeterlambatanProcessed.filter(x => x.totalMenit > 0);
 
       if (dataAdaKeterlambatan.length === 0) {
@@ -797,7 +808,6 @@
       });
     }
 
-    // Fungsi Sortir Cepat Alternatif dengan mengklik Judul Kolom Header Tabel (Interaktif)
     let sortToggleHeaderState = true;
     function toggleSortViaHeader(tipe) {
       sortToggleHeaderState = !sortToggleHeaderState;
@@ -887,6 +897,8 @@
       document.body.appendChild(link); link.click(); document.body.removeChild(link);
     }
 
+    async function mergeManualAdmin() {} // Keep placeholder if structural bindings demand it
+    
     async function kirimManualAdmin() {
       const nip = document.getElementById("inputPegawai").value, tanggal = document.getElementById("inputTanggal").value;
       const jenis = document.getElementById("inputJenis").value, keterangan = document.getElementById("inputKeterangan").value;
