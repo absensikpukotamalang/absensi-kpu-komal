@@ -1,27 +1,3 @@
-Masalah tersebut terjadi karena pada fungsi `tarikLaporanAdmin()` di `admin.html`, variabel `jamPulangResmi` masih menggunakan logika *hardcoded*:
-
-```javascript
-const jamPulangResmi = (hariIndex === 5) ? jamKerjaSetting.pulangJumat : jamKerjaSetting.pulangSeninKamis;
-
-```
-
-Sedangkan di dalam objek `jamKerjaSetting`, nilai bawaannya diinisialisasi dengan jam `16:00` (Senin-Kamis) dan `16:30` (Jumat). Namun, ketika data ditarik dari Google Apps Script (`kode.gs`), properti objek yang dikirimkan memiliki nama key yang berbeda dengan properti penampung di `admin.html`.
-
-Di `kode.gs` Anda menuliskan:
-
-* `settingJamKerja.pulangSeninKamis`
-* `settingJamKerja.pulangJumat`
-
-Sedangkan di `admin.html` Anda membaca:
-
-* `jamKerjaSetting.pulangSeninKamis = data.settingJamKerja.pulangSeninKamis`
-*(Padahal di deklarasi awal objek atas, property name yang Anda tulis adalah `pulangSeninKamis: "16:00"`, tetapi logika pengecekan hari di JavaScript mendeteksi Hari Kamis terbaca `16:30` karena nilai aslinya tidak tersinkronisasi sempurna dari `kode.gs` ke variabel penentu hari).*
-
-Untuk merapikan dan memastikan Jam Pulang **100% mengikuti aturan dinamis dari data Sheet SETTING** di Spreadsheet, berikut adalah perbaikan kode lengkap untuk `admin.html`. Anda tidak perlu mengubah `kode.gs` karena struktur datanya sudah kita sinkronkan langsung di sisi klien.
-
-Berikut adalah kode lengkap file `admin.html` dari awal hingga akhir:
-
-```html
 <!DOCTYPE html>
 <html lang="id">
 <head>
