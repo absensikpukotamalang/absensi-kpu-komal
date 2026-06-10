@@ -222,27 +222,27 @@
         <div class="table-responsive">
           <table class="table-laporan-admin">
            <thead>
-             <tr>
-               <th>Tanggal</th>
-               <th>NIP</th>
-               <th>Nama Pegawai</th>
-               <th>Status</th>
-               <th>Masuk</th>
-               <th>Pulang</th>
-               <th>Ket. Masuk</th>
-               <th>Ket. Pulang</th>
-               <th>Catatan Admin</th>
-               <th class="text-center">F.Masuk</th>
-               <th class="text-center">F.Pulang</th>
-               <th class="text-center" style="width: 130px;">Aksi Pengelola</th>
-             </tr>
+              <tr>
+                <th>Tanggal</th>
+                <th>NIP</th>
+                <th>Nama Pegawai</th>
+                <th>Status</th>
+                <th>Masuk</th>
+                <th>Pulang</th>
+                <th>Ket. Masuk</th>
+                <th>Ket. Pulang</th>
+                <th>Catatan Admin</th>
+                <th class="text-center">F.Masuk</th>
+                <th class="text-center">F.Pulang</th>
+                <th class="text-center" style="width: 130px;">Aksi Pengelola</th>
+              </tr>
            </thead>
             <tbody id="bodyLaporanAdmin">
-             <tr>
+              <tr>
                 <td colspan="12" class="text-center" style="color:#a0aec0; padding:20px;">Data siap ditarik.</td>
-             </tr>
+              </tr>
            </tbody>
-         </table>
+          </table>
         </div>
       </div>
  
@@ -284,20 +284,20 @@
         <div class="table-responsive" style="margin-top: 15px;">
           <table style="table-layout: auto;">
            <thead>
-             <tr>
+              <tr>
                 <th style="width: 5%; text-align: center; background-color: var(--purple);">No</th>
                 <th style="width: 12%; text-align: center; background-color: var(--purple);">Hari</th>
                 <th style="width: 13%; text-align: center; background-color: var(--purple);">Tanggal</th>
                 <th style="width: 45%; background-color: var(--purple);">Uraian Tugas / Aktivitas</th>
                 <th style="width: 25%; background-color: var(--purple);">Output Kerja / Berkas</th>
-             </tr>
+              </tr>
            </thead>
             <tbody id="bodyLaporanKinerja">
-             <tr>
+              <tr>
                 <td colspan="5" class="text-center" style="color:#a0aec0; padding:20px;">Silakan tentukan saringan data di atas lalu klik tombol proses.</td>
-             </tr>
+              </tr>
            </tbody>
-         </table>
+          </table>
         </div>
       </div>
  
@@ -319,7 +319,7 @@
              <option value="menit-desc" selected>Total Menit (Paling Tinggi)</option>
              <option value="menit-asc">Total Menit (Paling Rendah)</option>
              <option value="frekuensi-desc">Frekuensi Terlambat (Paling Sering)</option>
-             <option value="frekuensi-asc">Frekuensi Terlambat (Paling Sering)</option>
+             <option value="frekuensi-asc">Frekuensi Terlambat (Paling Rendah)</option>
              <option value="nama-asc">Nama Pegawai (A - Z)</option>
            </select>
           </div>
@@ -330,17 +330,17 @@
         <div class="table-responsive" style="margin-top: 15px;">
          <table>
            <thead>
-             <tr>
+              <tr>
                 <th style="width: 25%; background-color: var(--warning)">NIP</th>
                 <th style="width: 35%; background-color: var(--warning)">Nama Pegawai</th>
                 <th class="sortable text-center" style="width: 20%; background-color: var(--warning)" onclick="toggleSortViaHeader('frekuensi')">Frekuensi Terlambat ⇅</th>
                 <th class="sortable text-center" style="width: 20%; background-color: var(--warning)" onclick="toggleSortViaHeader('menit')">Total Durasi (Menit) ⇅</th>
-             </tr>
+              </tr>
            </thead>
             <tbody id="bodyRekapKeterlambatan">
-             <tr>
+              <tr>
                 <td colspan="4" class="text-center" style="color:#a0aec0; padding:20px;">Tentukan rentang tanggal lalu klik tombol proses.</td>
-             </tr>
+              </tr>
            </tbody>
          </table>
         </div>
@@ -589,7 +589,8 @@
             const tagFotoMasuk = urlMasukValid ? `<img src="${urlMasukValid}" class="img-preview-table" onclick="event.stopPropagation(); bukaPopUpFoto('${urlMasukValid}', '${item.nama.replace(/'/g, "\\'")}', 'FOTO MASUK')">` : "-";
             const tagFotoPulang = urlPulangValid ? `<img src="${urlPulangValid}" class="img-preview-table" onclick="event.stopPropagation(); bukaPopUpFoto('${urlPulangValid}', '${item.nama.replace(/'/g, "\\'")}', 'FOTO PULANG')">` : "-";
             
-            let txtMasuk = "Tepat Waktu", warnaMasuk = "inherit";
+            // --- LOGIKA PERBAIKAN PENENTUAN STATUS KETERANGAN ---
+            let txtMasuk = "Tepat Waktu", warnaMasuk = "var(--success)"; 
             let txtPulang = "Belum Absen", warnaPulang = "inherit";
             const jenisUpper = (item.jenis || "").trim().toUpperCase();
  
@@ -598,14 +599,27 @@
               warnaMasuk = "var(--warning)"; warnaPulang = "var(--warning)";
             } else {
               const jamPulangResmi = (ambilIndexHariDariTglStr(item.tanggal) === 5) ? jamKerjaSetting.pulangJumat : jamKerjaSetting.pulangSeninKamis;
-              if (item.keterangan && item.keterangan !== "0" && item.keterangan !== "-") {
+              
+              // 1. Validasi Jam Masuk Kosong / Strip
+              if (!item.jamMasuk || item.jamMasuk === "-") {
+                txtMasuk = "Tidak Absen Masuk";
+                warnaMasuk = "var(--danger)";
+              } else if (item.keterangan && item.keterangan !== "0" && item.keterangan !== "-") {
                 if(!isNaN(item.keterangan)) {
-                  txtMasuk = `Terlambat ${item.keterangan} Menit`; warnaMasuk = "var(--danger)";
-                } else { txtMasuk = item.keterangan; }
+                  txtMasuk = `Terlambat ${item.keterangan} Menit`; 
+                  warnaMasuk = "var(--danger)";
+                } else { 
+                  txtMasuk = item.keterangan; 
+                }
               }
+              
+              // 2. Validasi Jam Pulang
               if (item.jamPulang && item.jamPulang !== "-") {
-                if (hitungMenitSelisih(jamPulangResmi, item.jamPulang) >= 0) { txtPulang = "Tepat Waktu"; warnaPulang = "var(--success)"; }
-                else { txtPulang = "PSW"; warnaPulang = "var(--danger)"; }
+                if (hitungMenitSelisih(jamPulangResmi, item.jamPulang) >= 0) { 
+                  txtPulang = "Tepat Waktu"; warnaPulang = "var(--success)"; 
+                } else { 
+                  txtPulang = "PSW"; warnaPulang = "var(--danger)"; 
+                }
               }
             }
  
@@ -621,8 +635,6 @@
                 <button class="btn-action btn-delete" onclick="event.stopPropagation(); pemicuHapusLaporan('${item.rowId}')">❌</button>
             ` : `<span style="color:#cbd5e0; font-size:11px;">🔒 Mobile-Absen</span>`;
  
-            // ATURAN RENDER DATA CATATAN PADA TABEL DASHBOARD:
-            // Jika WFO/WFH/WFA, ambil isi Kolom O (catatanAdmin). Jika selain itu, ambil properti jenis/keterangan manual.
             let cetakCatatan = "";
             if (["WFO", "WFH", "WFA"].includes(jenisUpper)) {
               cetakCatatan = item.catatanAdmin || "";
@@ -932,7 +944,10 @@
       dataLaporanSekarang.forEach(item => {
         let clsM = '', clsP = '';
         if (!["WFO","WFH","WFA"].includes((item.jenis||"").toUpperCase())) { clsM = clsP = 'class="oranye"'; } 
-        else { clsM = item.kalkulasiMasuk.includes("Terlambat") ? 'class="merah"' : ''; clsP = item.kalkulasiPulang === "PSW" ? 'class="merah"' : (item.kalkulasiPulang === "Tepat Waktu" ? 'class="hijau"' : ''); }
+        else { 
+          clsM = item.kalkulasiMasuk.includes("Terlambat") || item.kalkulasiMasuk === "Tidak Absen Masuk" ? 'class="merah"' : ''; 
+          clsP = item.kalkulasiPulang === "PSW" ? 'class="merah"' : (item.kalkulasiPulang === "Tepat Waktu" ? 'class="hijau"' : ''); 
+        }
  
         excelTemplate += `<tr><td class="text-center">${item.tanggal}</td><td class="text-center" style="mso-number-format:'\\@';">'${item.nip}</td><td><b>${item.nama}</b></td><td class="text-center">${item.jenis}</td><td class="text-center">${item.jamMasuk || '-'}</td><td class="text-center">${item.jamPulang || '-'}</td><td ${clsM}>${item.kalkulasiMasuk}</td><td ${clsP}>${item.kalkulasiPulang}</td><td>${item.fotoMasuk || '-'}</td><td>${item.fotoPulang || '-'}</td></tr>`;
       });
@@ -944,8 +959,7 @@
       link.setAttribute("download", `REKAP_PRESENSI_${document.getElementById("filterType").value.toUpperCase()}_${new Date().toISOString().slice(0,10)}.xls`);
       document.body.appendChild(link); link.click(); document.body.removeChild(link);
     }
-
-    // --- FUNGSI PENGENDALIAN MODAL CATATAN DASHBOARD VIA DOUBLE CLICK ---
+ 
     function bukaModalCatatan(item) {
       document.getElementById("lblDetailNama").innerText = `${item.nama} (${item.nip})`;
       document.getElementById("lblDetailTanggal").innerText = item.tanggal;
@@ -954,7 +968,6 @@
       document.getElementById("txtNoteRowId").value = item.rowId;
       document.getElementById("txtNoteIsManual").value = item.isManual;
       
-      // Ambil isi teks catatan murni berdasarkan metode penarikan:
       const jenisUpper = (item.jenis || "").trim().toUpperCase();
       let catatanDefault = "";
       
@@ -999,6 +1012,6 @@
         showLoading(false);
       }
     }
-  </script>
+ </script>
 </body>
 </html>
