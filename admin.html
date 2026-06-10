@@ -70,7 +70,7 @@
     
     /* Table Layout Dynamic Adjustment */
     .table-laporan-admin th, .table-laporan-admin td { padding: 10px 6px; border-bottom: 1px solid #e2e8f0; vertical-align: middle; }
-    th { background: var(--admin-color); color: white; font-weight: 600; text-align: left; }
+    th { background: var(--admin-color); color: white; font-weight: 600; text-align: left; padding: 10px 6px; }
     th.sortable { cursor: pointer; position: relative; user-select: none; }
     th.sortable:hover { background: var(--admin-dark); }
     tr:nth-child(even) { background: #f8fafc; }
@@ -158,6 +158,7 @@
         <div class="nav-item" id="tab-input" onclick="switchAdminTab('input')">✍️ Input Manual</div>
       </div>
 
+      <!-- PANEL DASHBOARD LAPORAN -->
       <div class="card view-panel" id="panel-laporan" style="display: block;">
         <h3>Saringan Data Rekapitulasi</h3>
         
@@ -225,6 +226,7 @@
         </div>
       </div>
 
+      <!-- PANEL LAPORAN KINERJA -->
       <div class="card view-panel" id="panel-kinerja">
         <h3 style="color: var(--purple); border-bottom-color: #e9d8fd;">Laporan Performa Kinerja Pegawai</h3>
         
@@ -247,6 +249,10 @@
 
         <button onclick="prosesLaporanKinerja()" style="background: var(--purple);">PROSES DATA KINERJA</button>
 
+        <div style="text-align: right;">
+          <button class="btn-excel" onclick="exportKeExcelKinerja()" style="background-color: #107c41; margin-top: 20px; margin-bottom: 5px;"> Excel &nbsp;📥 EXPORT KINERJA TO EXCEL</button>
+        </div>
+
         <div class="meta-kinerja-box" id="boxMetaKinerja">
           <table>
             <tr><td style="font-weight: bold; width: 100px;">Nama</td><td>: <span id="lblKinerjaNama">-</span></td></tr>
@@ -260,20 +266,23 @@
           <table style="table-layout: auto;">
             <thead>
               <tr>
-                <th style="width: 15%;">Tanggal</th>
-                <th style="width: 55%;">Uraian Tugas / Aktivitas</th>
-                <th style="width: 30%;">Output Kerja / Berkas</th>
+                <th style="width: 5%; text-align: center; background-color: var(--purple);">No</th>
+                <th style="width: 12%; text-align: center; background-color: var(--purple);">Hari</th>
+                <th style="width: 13%; text-align: center; background-color: var(--purple);">Tanggal</th>
+                <th style="width: 45%; background-color: var(--purple);">Uraian Tugas / Aktivitas</th>
+                <th style="width: 25%; background-color: var(--purple);">Output Kerja / Berkas</th>
               </tr>
             </thead>
             <tbody id="bodyLaporanKinerja">
               <tr>
-                <td colspan="3" class="text-center" style="color:#a0aec0; padding:20px;">Silakan tentukan saringan data di atas lalu klik tombol proses.</td>
+                <td colspan="5" class="text-center" style="color:#a0aec0; padding:20px;">Silakan tentukan saringan data di atas lalu klik tombol proses.</td>
               </tr>
             </tbody>
           </table>
         </div>
       </div>
 
+      <!-- PANEL REKAP KETERLAMBATAN -->
       <div class="card view-panel" id="panel-keterlambatan">
         <h3 style="color: var(--warning); border-bottom-color: #feebc8;">Rekap Analisis Keterlambatan Pegawai</h3>
         
@@ -304,10 +313,10 @@
           <table>
             <thead>
               <tr>
-                <th style="width: 25%;">NIP</th>
-                <th style="width: 35%;">Nama Pegawai</th>
-                <th class="sortable text-center" style="width: 20%;" onclick="toggleSortViaHeader('frekuensi')">Frekuensi Terlambat ⇅</th>
-                <th class="sortable text-center" style="width: 20%;" onclick="toggleSortViaHeader('menit')">Total Durasi (Menit) ⇅</th>
+                <th style="width: 25%; background-color: var(--warning)">NIP</th>
+                <th style="width: 35%; background-color: var(--warning)">Nama Pegawai</th>
+                <th class="sortable text-center" style="width: 20%; background-color: var(--warning)" onclick="toggleSortViaHeader('frekuensi')">Frekuensi Terlambat ⇅</th>
+                <th class="sortable text-center" style="width: 20%; background-color: var(--warning)" onclick="toggleSortViaHeader('menit')">Total Durasi (Menit) ⇅</th>
               </tr>
             </thead>
             <tbody id="bodyRekapKeterlambatan">
@@ -319,6 +328,7 @@
         </div>
       </div>
 
+      <!-- PANEL INPUT MANUAL -->
       <div class="card view-panel" id="panel-input">
         <h3 id="txtHeaderFormManual">Formulir Input Ketidakhadiran Pegawai</h3>
         <input type="hidden" id="txtEditRowId" value="">
@@ -331,13 +341,13 @@
         
         <label for="inputJenis">Status Ketidakhadiran / Jenis Presensi</label>
         <select id="inputJenis" onchange="adjustFormRequirement()">
-  <option value="CUTI SAKIT">CUTI SAKIT</option>
-  <option value="CUTI TAHUNAN">CUTI TAHUNAN</option>
-  <option value="CUTI BESAR">CUTI BESAR</option>
-  <option value="CUTI MELAHIRKAN">CUTI MELAHIRKAN</option>
-  <option value="CUTI ALASAN PENTING">CUTI ALASAN PENTING</option>
-  <option value="CLTN">CLTN (Cuti Di Luar Tanggungan Negara)</option>
-</select>
+          <option value="CUTI SAKIT">CUTI SAKIT</option>
+          <option value="CUTI TAHUNAN">CUTI TAHUNAN</option>
+          <option value="CUTI BESAR">CUTI BESAR</option>
+          <option value="CUTI MELAHIRKAN">CUTI MELAHIRKAN</option>
+          <option value="CUTI ALASAN PENTING">CUTI ALASAN PENTING</option>
+          <option value="CLTN">CLTN (Cuti Di Luar Tanggungan Negara)</option>
+        </select>
 
         <div id="wrapper-opsional-jam" style="display: none; grid-template-columns: 1fr 1fr; gap: 10px;">
           <div>
@@ -364,6 +374,7 @@
     const adminAktif = "System Admin";
     let daftarPegawaiCache = [];
     let dataLaporanSekarang = [];
+    let dataKinerjaSekarang = [];
     let databaseMentahAbsen = []; 
     let rekapKeterlambatanProcessed = [];
     
@@ -446,7 +457,6 @@
     }
 
     function adjustFormRequirement() {
-      // Seluruh opsi baru adalah ketidakhadiran (Cuti/CLTN), penanda jam manual ditiadakan/sembunyikan
       document.getElementById("wrapper-opsional-jam").style.display = "none";
     }
 
@@ -491,9 +501,10 @@
     }
     function tutupPopUpFoto() { document.getElementById("imagePopUpModal").style.display = "none"; }
     function hitungMenitSelisih(wAwal, wAkhir) { return ((e, s) => (e[0]*60 + parseInt(e[1])) - (s[0]*60 + parseInt(s[1])))(wAkhir.split(":"), wAwal.split(":")); }
+    
     function ambilIndexHariDariTglStr(tglStr) { 
       let p = tglStr.split("/");
-      if(p[0].includes("-")) p = tglStr.split("-").reverse(); // Antisipasi format yyyy-mm-dd
+      if(p[0].includes("-")) p = tglStr.split("-").reverse();
       return new Date((p[2].length===2?"20"+p[2]:p[2]), p[1]-1, p[0]).getDay(); 
     }
 
@@ -530,7 +541,7 @@
               const p = item.tanggal.split("/");
               itemDateStr = `${p[2].length===2?"20"+p[2]:p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
             } else {
-              itemDateStr = item.tanggal; // Format yyyy-MM-dd langsung dari INPUT_MANUAL
+              itemDateStr = item.tanggal;
             }
 
             if (type === "harian") return itemDateStr === tglAwal;
@@ -559,7 +570,6 @@
             let txtPulang = "Belum Absen", warnaPulang = "inherit";
             const jenisUpper = (item.jenis || "").trim().toUpperCase();
 
-            // Jika asalnya dari INPUT_MANUAL / beralasan ketidakhadiran resmi
             if (!["WFO", "WFH", "WFA"].includes(jenisUpper)) {
               txtMasuk = item.jenis; txtPulang = item.jenis;
               warnaMasuk = "var(--warning)"; warnaPulang = "var(--warning)";
@@ -583,7 +593,6 @@
             else if(["CUTI SAKIT","CUTI TAHUNAN","CUTI BESAR","CUTI MELAHIRKAN","CUTI ALASAN PENTING","CLTN"].includes(jenisUpper)) bgBadge = "#e9d8fd; color: #44337a;";
             else bgBadge = "#fed7d7; color: #742a2a;"; 
 
-            // HANYA data manual yang memunculkan tombol Aksi Pengelola (Edit & Hapus)
             const aksiTombol = item.isManual ? `
                 <button class="btn-action btn-edit" onclick="pemicuEditLaporan('${item.rowId}')">✏️</button>
                 <button class="btn-action btn-delete" onclick="pemicuHapusLaporan('${item.rowId}')">❌</button>
@@ -608,17 +617,14 @@
       } catch(e) { console.error(e); } finally { showLoading(false); }
     }
 
-    // INTERFACE CRUD LOGIC MANAGEMENT (KHUSUS DATA MANUAL)
     function pemicuEditLaporan(stringId) {
       const target = databaseMentahAbsen.find(x => String(x.rowId) === String(stringId));
       if(!target) return;
       
       switchAdminTab('input');
       document.getElementById("txtHeaderFormManual").innerText = "Modifikasi Ketidakhadiran Pegawai (INPUT_MANUAL)";
-      document.getElementById("txtEditRowId").value = target.rowId; // Berisi String ID_INPUT unik
+      document.getElementById("txtEditRowId").value = target.rowId;
       document.getElementById("inputPegawai").value = target.nip;
-      
-      // Map jenis presensi yang sesuai
       document.getElementById("inputJenis").value = target.jenis;
       
       let formattedDate = "";
@@ -665,7 +671,7 @@
       const tanggal = document.getElementById("inputTanggal").value;
       const jenis = document.getElementById("inputJenis").value;
       const keterangan = document.getElementById("inputKeterangan").value;
-      const editRowId = document.getElementById("txtEditRowId").value; // Berisi ID_INPUT unik jika mode edit
+      const editRowId = document.getElementById("txtEditRowId").value;
 
       if(!nip || !tanggal) { alert("Kolom Pegawai dan Tanggal wajib ditentukan!"); return; }
       const p = daftarPegawaiCache.find(x => x.nip === nip);
@@ -682,7 +688,7 @@
       form.append("tanggal", tanggal);
       form.append("jenis", jenis);
       form.append("keterangan", keterangan);
-      form.append("adminActive", adminAktif); // Menyimpan nama admin penginput
+      form.append("adminActive", adminAktif);
 
       showLoading(true);
       try {
@@ -699,10 +705,10 @@
       } catch(e) { alert("Gagal memproses pengiriman data ke INPUT_MANUAL."); } finally { showLoading(false); }
     }
 
-    // FUNCTIONALITY PANEL KINERJA & KETERLAMBATAN
     function bersihkanTabelKinerja() {
+      dataKinerjaSekarang = [];
       document.getElementById("boxMetaKinerja").style.display = "none";
-      document.getElementById("bodyLaporanKinerja").innerHTML = '<tr><td colspan="3" class="text-center" style="color:#a0aec0; padding:20px;">Silakan klik tombol proses untuk memperbarui data.</td></tr>';
+      document.getElementById("bodyLaporanKinerja").innerHTML = '<tr><td colspan="5" class="text-center" style="color:#a0aec0; padding:20px;">Silakan klik tombol proses untuk memperbarui data.</td></tr>';
     }
 
     function prosesLaporanKinerja() {
@@ -721,7 +727,7 @@
       document.getElementById("boxMetaKinerja").style.display = "block";
 
       if (databaseMentahAbsen.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="3" class="text-center" style="color:var(--danger);">Muat ulang rekap di Dashboard Laporan dahulu.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center" style="color:var(--danger);">Muat ulang rekap di Dashboard Laporan dahulu.</td></tr>';
         return;
       }
 
@@ -737,16 +743,64 @@
         return dStr >= tglAwal && dStr <= tglAkhir;
       }).sort((a,b) => a.tanggal.split('/').reverse().join('').localeCompare(b.tanggal.split('/').reverse().join('')));
 
-      tbody.innerHTML = disaring.length === 0 ? '<tr><td colspan="3" class="text-center">Tidak ada catatan performa / ketidakhadiran.</td></tr>' : "";
-      disaring.forEach(item => {
+      dataKinerjaSekarang = disaring;
+      tbody.innerHTML = disaring.length === 0 ? '<tr><td colspan="5" class="text-center">Tidak ada catatan performa / ketidakhadiran.</td></tr>' : "";
+      
+      const namaHari = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+
+      disaring.forEach((item, index) => {
         const tr = document.createElement("tr");
+        const indexHari = ambilIndexHariDariTglStr(item.tanggal);
+        const hariText = namaHari[indexHari] || "-";
+
         tr.innerHTML = `
+          <td class="text-center">${index + 1}</td>
+          <td class="text-center" style="font-weight:600; color:var(--admin-dark);">${hariText}</td>
           <td class="text-center" style="font-weight:600; color:var(--admin-dark);">${item.tanggal}</td>
           <td style="line-height:1.4; white-space:pre-line;">${item.uraian_tugas || item.keterangan || '-'}</td>
           <td style="line-height:1.4;">${item.output || '-'}</td>
         `;
         tbody.appendChild(tr);
       });
+    }
+
+    function exportKeExcelKinerja() {
+      if (dataKinerjaSekarang.length === 0) { alert("Tidak ada data laporan kinerja aktif! Silakan klik PROSES DATA KINERJA terlebih dahulu."); return; }
+      
+      const namaPegawai = document.getElementById("lblKinerjaNama").innerText;
+      const nipPegawai = document.getElementById("lblKinerjaNIP").innerText;
+      const jabatanPegawai = document.getElementById("lblKinerjaJabatan").innerText;
+      const atasanPegawai = document.getElementById("lblKinerjaAtasan").innerText;
+      
+      let excelTemplate = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="UTF-8"><style>body { font-family: sans-serif; } .judul { font-size: 16px; font-weight: bold; text-align: center; color: #6b46c1; } .meta-table td { font-weight: bold; padding: 3px; border: none; } th { background-color: #6b46c1; color: white; font-weight: bold; border: 1px solid #cbd5e0; padding: 8px; } td { border: 1px solid #e2e8f0; padding: 6px; } .text-center { text-align: center; }</style></head><body><table><tr><td colspan="5" class="judul">LAPORAN AKTIVITAS KINERJA PEGAWAI KPU KOTA MALANG</td></tr><tr><td colspan="5"></td></tr>`;
+      
+      excelTemplate += `
+        <tr class="meta-table"><td>Nama</td><td colspan="4">: ${namaPegawai}</td></tr>
+        <tr class="meta-table"><td>NIP</td><td colspan="4" style="mso-number-format:'\\@';">: '${nipPegawai}</td></tr>
+        <tr class="meta-table"><td>Jabatan</td><td colspan="4">: ${jabatanPegawai}</td></tr>
+        <tr class="meta-table"><td>Atasan</td><td colspan="4">: ${atasanPegawai}</td></tr>
+        <tr><td colspan="5"></td></tr>
+      `;
+
+      excelTemplate += `<thead><tr><th>No</th><th>Hari</th><th>Tanggal</th><th>Uraian Tugas / Aktivitas</th><th>Output Kerja / Berkas</th></tr></thead><tbody>`;
+
+      const namaHari = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+
+      dataKinerjaSekarang.forEach((item, index) => {
+        const indexHari = ambilIndexHariDariTglStr(item.tanggal);
+        const hariText = namaHari[indexHari] || "-";
+        const isiUraian = item.uraian_tugas || item.keterangan || '-';
+        
+        excelTemplate += `<tr><td class="text-center">${index + 1}</td><td class="text-center">${hariText}</td><td class="text-center">${item.tanggal}</td><td>${isiUraian}</td><td>${item.output || '-'}</td></tr>`;
+      });
+
+      excelTemplate += `</tbody></table></body></html>`;
+      
+      const blob = new Blob([excelTemplate], { type: "application/vnd.ms-excel;charset=utf-8;" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.setAttribute("download", `LAPORAN_KINERJA_${nipPegawai}_${new Date().toISOString().slice(0,10)}.xls`);
+      document.body.appendChild(link); link.click(); document.body.removeChild(link);
     }
 
     function prosesRekapKeterlambatan() {
