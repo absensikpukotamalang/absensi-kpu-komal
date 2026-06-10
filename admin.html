@@ -621,7 +621,14 @@
                 <button class="btn-action btn-delete" onclick="event.stopPropagation(); pemicuHapusLaporan('${item.rowId}')">❌</button>
             ` : `<span style="color:#cbd5e0; font-size:11px;">🔒 Mobile-Absen</span>`;
  
-            const cetakCatatan = (item.keterangan && item.keterangan !== "0" && item.keterangan !== "-") ? item.keterangan : "";
+            // ATURAN RENDER DATA CATATAN PADA TABEL DASHBOARD:
+            // Jika WFO/WFH/WFA, ambil isi Kolom O (catatanAdmin). Jika selain itu, ambil properti jenis/keterangan manual.
+            let cetakCatatan = "";
+            if (["WFO", "WFH", "WFA"].includes(jenisUpper)) {
+              cetakCatatan = item.catatanAdmin || "";
+            } else {
+              cetakCatatan = (item.keterangan && item.keterangan !== "0" && item.keterangan !== "-") ? item.keterangan : "";
+            }
  
             tr.innerHTML = `
               <td>${item.tanggal}</td>
@@ -947,8 +954,15 @@
       document.getElementById("txtNoteRowId").value = item.rowId;
       document.getElementById("txtNoteIsManual").value = item.isManual;
       
-      let catatanDefault = (item.keterangan && item.keterangan !== "0" && item.keterangan !== "-") ? item.keterangan : "";
-      if(!isNaN(catatanDefault)) catatanDefault = ""; 
+      // Ambil isi teks catatan murni berdasarkan metode penarikan:
+      const jenisUpper = (item.jenis || "").trim().toUpperCase();
+      let catatanDefault = "";
+      
+      if (["WFO", "WFH", "WFA"].includes(jenisUpper)) {
+        catatanDefault = item.catatanAdmin || "";
+      } else {
+        catatanDefault = (item.keterangan && item.keterangan !== "0" && item.keterangan !== "-") ? item.keterangan : "";
+      }
       
       document.getElementById("txtAreaCatatanAdmin").value = catatanDefault;
       document.getElementById("noteEditModal").style.display = "flex";
