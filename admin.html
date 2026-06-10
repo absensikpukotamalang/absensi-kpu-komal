@@ -89,18 +89,19 @@
     .btn-action { padding: 4px 8px; border-radius: 6px; border: none; font-size: 11px; font-weight: bold; cursor: pointer; color: white; text-transform: uppercase; margin: 2px; display: inline-block; width: auto; }
     .btn-edit { background: var(--warning); } .btn-edit:hover { background: #b75313; }
     .btn-delete { background: var(--danger); } .btn-delete:hover { background: #b72b2b; }
+    .btn-note { background: #4a5568; } .btn-note:hover { background: #2d3748; }
 
-    .photo-modal {
+    .photo-modal, .note-modal {
       display: none; position: fixed; z-index: 10000; top: 0; left: 0; width: 100%; height: 100%;
       background-color: rgba(0, 0, 0, 0.65); align-items: center; justify-content: center; backdrop-filter: blur(4px);
     }
     .modal-content-card {
-      background: white; padding: 15px; border-radius: 16px; position: relative; max-width: 400px; width: 85%;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.4); text-align: center; animation: zoomInAnim 0.2s ease-out;
+      background: white; padding: 20px; border-radius: 16px; position: relative; max-width: 420px; width: 85%;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.4); text-align: left; animation: zoomInAnim 0.2s ease-out;
     }
     @keyframes zoomInAnim { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
     .modal-image { width: 100%; height: auto; max-height: 400px; object-fit: contain; border-radius: 8px; border: 1px solid #e2e8f0; background: #f7fafc; }
-    .modal-info-text { color: var(--text-dark); font-size: 13px; font-weight: bold; margin-top: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .modal-info-text { color: var(--text-dark); font-size: 13px; font-weight: bold; margin-top: 10px; text-transform: uppercase; letter-spacing: 0.5px; text-align: center; }
     .close-modal-btn {
       position: absolute; top: -10px; right: -10px; background: var(--danger); color: white; border: 2px solid white;
       width: 30px; height: 30px; border-radius: 50%; font-weight: bold; font-size: 14px; cursor: pointer;
@@ -115,6 +116,7 @@
     .meta-kinerja-box tr:nth-child(even) { background: transparent; }
 
     .view-panel { display: none; }
+    .text-catatan-pegawai { font-size: 11px; color: #2b6cb0; font-weight: 500; display: block; margin-top: 3px; background: #ebf8ff; padding: 2px 5px; border-radius: 4px; border-left: 3px solid #2b6cb0; max-width: 250px; word-wrap: break-word; }
   </style>
 </head>
 <body>
@@ -122,10 +124,28 @@
   <div class="loading-overlay" id="loading">Sinkronisasi Basis Data Eksternal... Mohon Tunggu...</div>
 
   <div class="photo-modal" id="imagePopUpModal" onclick="tutupPopUpFoto()">
-    <div class="modal-content-card" onclick="event.stopPropagation()">
+    <div class="modal-content-card" style="text-align: center;" onclick="event.stopPropagation()">
       <button class="close-modal-btn" onclick="tutupPopUpFoto()">✕</button>
       <img src="" class="modal-image" id="modalTargetImg" alt="Detail Presensi">
       <div class="modal-info-text" id="modalTargetLabel">Nama Pegawai</div>
+    </div>
+  </div>
+
+  <div class="note-modal" id="notePopUpModal" onclick="tutupPopUpCatatan()">
+    <div class="modal-content-card" style="color: var(--text-dark);" onclick="event.stopPropagation()">
+      <button class="close-modal-btn" onclick="tutupPopUpCatatan()">✕</button>
+      <h3 style="color: var(--admin-color); border-bottom: 2px solid #edf2f7; padding-bottom: 5px; font-size: 15px;">📝 Berikan Catatan Evaluasi</h3>
+      
+      <input type="hidden" id="noteTargetNip">
+      <input type="hidden" id="noteTargetTanggal">
+      
+      <p style="font-size: 13px; margin-top: 10px; margin-bottom: 3px;"><strong>Pegawai:</strong> <span id="noteLabelNama">-</span></p>
+      <p style="font-size: 13px; margin-bottom: 12px;"><strong>Tanggal Absen:</strong> <span id="noteLabelTanggal">-</span></p>
+      
+      <label for="noteTxtArea" style="margin-top: 5px;">Tulis Catatan / Instruksi Kasubbag:</label>
+      <textarea id="noteTxtArea" rows="4" placeholder="Contoh: Lampirkan surat keterangan dokter / Foto tidak valid..."></textarea>
+      
+      <button onclick="simpanCatatanKasubbag()" style="background: var(--admin-color); margin-top: 15px; padding: 10px;">SIMPAN CATATAN KE SYSTEM</button>
     </div>
   </div>
 
@@ -158,7 +178,6 @@
         <div class="nav-item" id="tab-input" onclick="switchAdminTab('input')">✍️ Input Manual</div>
       </div>
 
-      <!-- PANEL DASHBOARD LAPORAN -->
       <div class="card view-panel" id="panel-laporan" style="display: block;">
         <h3>Saringan Data Rekapitulasi</h3>
         
@@ -214,7 +233,7 @@
                 <th>Ket. Pulang</th>
                 <th class="text-center">F.Masuk</th>
                 <th class="text-center">F.Pulang</th>
-                <th class="text-center" style="width: 130px;">Aksi Pengelola</th>
+                <th class="text-center" style="width: 140px;">Aksi Pengelola</th>
               </tr>
             </thead>
             <tbody id="bodyLaporanAdmin">
@@ -226,7 +245,6 @@
         </div>
       </div>
 
-      <!-- PANEL LAPORAN KINERJA -->
       <div class="card view-panel" id="panel-kinerja">
         <h3 style="color: var(--purple); border-bottom-color: #e9d8fd;">Laporan Performa Kinerja Pegawai</h3>
         
@@ -282,7 +300,6 @@
         </div>
       </div>
 
-      <!-- PANEL REKAP KETERLAMBATAN -->
       <div class="card view-panel" id="panel-keterlambatan">
         <h3 style="color: var(--warning); border-bottom-color: #feebc8;">Rekap Analisis Keterlambatan Pegawai</h3>
         
@@ -328,7 +345,6 @@
         </div>
       </div>
 
-      <!-- PANEL INPUT MANUAL -->
       <div class="card view-panel" id="panel-input">
         <h3 id="txtHeaderFormManual">Formulir Input Ketidakhadiran Pegawai</h3>
         <input type="hidden" id="txtEditRowId" value="">
@@ -500,6 +516,46 @@
       document.getElementById("imagePopUpModal").style.display = "flex";
     }
     function tutupPopUpFoto() { document.getElementById("imagePopUpModal").style.display = "none"; }
+    
+    // LOGIKA MODAL POPUP CATATAN KASUBBAG
+    function bukaPopUpCatatan(nip, nama, tanggal, catatanSkg) {
+      document.getElementById("noteTargetNip").value = nip;
+      document.getElementById("noteTargetTanggal").value = tanggal;
+      document.getElementById("noteLabelNama").innerText = nama;
+      document.getElementById("noteLabelTanggal").innerText = tanggal;
+      document.getElementById("noteTxtArea").value = (catatanSkg && catatanSkg !== "0" && catatanSkg !== "-") ? catatanSkg : "";
+      document.getElementById("notePopUpModal").style.display = "flex";
+    }
+    function tutupPopUpCatatan() { document.getElementById("notePopUpModal").style.display = "none"; }
+
+    async function simpanCatatanKasubbag() {
+      const nip = document.getElementById("noteTargetNip").value;
+      const tanggal = document.getElementById("noteTargetTanggal").value;
+      const catatan = document.getElementById("noteTxtArea").value.trim();
+      
+      showLoading(true);
+      try {
+        const form = new URLSearchParams();
+        form.append("action", "update_catatan");
+        form.append("nip", nip);
+        form.append("tanggal", tanggal);
+        form.append("catatan", catatan);
+        
+        const res = await fetch(API, { method: "POST", body: form });
+        const data = await res.json();
+        
+        alert(data.message);
+        if (data.result === "success") {
+          tutupPopUpCatatan();
+          tarikLaporanAdmin(); // Refresh data agar catatan langsung tampil di bawah nama pegawai
+        }
+      } catch(e) {
+        alert("Gagal menyimpan catatan evaluasi Kasubbag.");
+      } finally {
+        showLoading(false);
+      }
+    }
+
     function hitungMenitSelisih(wAwal, wAkhir) { return ((e, s) => (e[0]*60 + parseInt(e[1])) - (s[0]*60 + parseInt(s[1])))(wAkhir.split(":"), wAwal.split(":")); }
     
     function ambilIndexHariDariTglStr(tglStr) { 
@@ -593,15 +649,26 @@
             else if(["CUTI SAKIT","CUTI TAHUNAN","CUTI BESAR","CUTI MELAHIRKAN","CUTI ALASAN PENTING","CLTN"].includes(jenisUpper)) bgBadge = "#e9d8fd; color: #44337a;";
             else bgBadge = "#fed7d7; color: #742a2a;"; 
 
-            const aksiTombol = item.isManual ? `
-                <button class="btn-action btn-edit" onclick="pemicuEditLaporan('${item.rowId}')">✏️</button>
-                <button class="btn-action btn-delete" onclick="pemicuHapusLaporan('${item.rowId}')">❌</button>
-            ` : `<span style="color:#cbd5e0; font-size:11px;">🔒 Mobile-Absen</span>`;
+            // Konstruksi tampilan catatan di bawah nama pegawai jika ada datanya
+            let htmlCatatan = "";
+            if (item.catatan && item.catatan !== "0" && item.catatan !== "-") {
+              htmlCatatan = `<span class="text-catatan-pegawai">📌 Catatan: ${item.catatan}</span>`;
+            }
+
+            // Tombol Edit & Hapus hanya untuk manual, tapi Tombol Note (📝) berlaku untuk semuanya
+            const tombolCrudKhusus = item.isManual ? `
+                <button class="btn-action btn-edit" onclick="pemicuEditLaporan('${item.rowId}')" title="Edit Data Manual">✏️</button>
+                <button class="btn-action btn-delete" onclick="pemicuHapusLaporan('${item.rowId}')" title="Hapus Data Manual">❌</button>
+            ` : `<span style="color:#cbd5e0; font-size:10px; display:block; margin-bottom:2px;">🔒 Mobile</span>`;
+
+            // Parameter String Catatan di-escape agar tidak merusak fungsi onclick
+            const stringCatatanEscape = (item.catatan || "").replace(/'/g, "\\'").replace(/"/g, '&quot;');
+            const tombolNoteUmum = `<button class="btn-action btn-note" onclick="bukaPopUpCatatan('${item.nip}', '${item.nama.replace(/'/g, "\\'")}', '${item.tanggal}', '${stringCatatanEscape}')" title="Berikan Catatan Kasubbag">📝</button>`;
 
             tr.innerHTML = `
               <td>${item.tanggal}</td>
               <td>${item.nip}</td>
-              <td><strong>${item.nama}</strong></td>
+              <td><strong>${item.nama}</strong>${htmlCatatan}</td>
               <td><span class="status-badge" style="background-color:${bgBadge}">${item.jenis}</span></td>
               <td>${item.jamMasuk || '-'}</td>
               <td>${item.jamPulang || '-'}</td>
@@ -609,7 +676,7 @@
               <td style="color:${warnaPulang}; font-weight:600;">${txtPulang}</td>
               <td class="text-center">${tagFotoMasuk}</td>
               <td class="text-center">${tagFotoPulang}</td>
-              <td class="text-center">${aksiTombol}</td>
+              <td class="text-center">${tombolCrudKhusus} ${tombolNoteUmum}</td>
             `;
             tbody.appendChild(tr);
           });
@@ -757,7 +824,6 @@
         let isiOutput = "";
         const jenisUpper = (item.jenis || "").trim().toUpperCase();
 
-        // Validasi Jenis Absen selain WFO/WFH/WFA
         if (!["WFO", "WFH", "WFA"].includes(jenisUpper)) {
           isiUraian = item.jenis;
           isiOutput = item.jenis;
@@ -807,7 +873,6 @@
         let isiOutput = "";
         const jenisUpper = (item.jenis || "").trim().toUpperCase();
 
-        // Validasi Ekspor Excel Jenis Absen selain WFO/WFH/WFA
         if (!["WFO", "WFH", "WFA"].includes(jenisUpper)) {
           isiUraian = item.jenis;
           isiOutput = item.jenis;
@@ -894,6 +959,7 @@
       urutkanTabelKeterlambatan();
     }
 
+    // PROTEKSI EKSPOR EXCEL: Kolom catatan tidak akan dimasukkan ke berkas unduhan
     function exportKeExcelLaporan() {
       if (dataLaporanSekarang.length === 0) { alert("Tidak ada data laporan aktif!"); return; }
       let excelTemplate = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="UTF-8"><style>body { font-family: sans-serif; } .judul { font-size: 16px; font-weight: bold; text-align: center; color: #1a365d; } th { background-color: #2b6cb0; color: white; font-weight: bold; border: 1px solid #cbd5e0; padding: 8px; } td { border: 1px solid #e2e8f0; padding: 6px; } .text-center { text-align: center; } .merah { color: red; font-weight: bold; } .hijau { color: green; font-weight: bold; } .oranye { color: orange; font-weight: bold; }</style></head><body><table><tr><td colspan="10" class="judul">LAPORAN REKAPITULASI PRESENSI PEGAWAI KPU KOTA MALANG</td></tr><tr><td colspan="10"></td></tr><thead><tr><th>Tanggal</th><th>NIP Pegawai</th><th>Nama Lengkap Pegawai</th><th>Status Kehadiran</th><th>Jam Masuk</th><th>Jam Pulang</th><th>Keterangan Masuk</th><th>Keterangan Pulang</th><th>Link Foto Masuk</th><th>Link Foto Pulang</th></tr></thead><tbody>`;
@@ -903,6 +969,7 @@
         if (!["WFO","WFH","WFA"].includes((item.jenis||"").toUpperCase())) { clsM = clsP = 'class="oranye"'; } 
         else { clsM = item.kalkulasiMasuk.includes("Terlambat") ? 'class="merah"' : ''; clsP = item.kalkulasiPulang === "PSW" ? 'class="merah"' : (item.kalkulasiPulang === "Tepat Waktu" ? 'class="hijau"' : ''); }
 
+        // Kolom catatan sengaja dilewati agar tidak muncul di excel sesuai permintaan Anda
         excelTemplate += `<tr><td class="text-center">${item.tanggal}</td><td class="text-center" style="mso-number-format:'\\@';">'${item.nip}</td><td><b>${item.nama}</b></td><td class="text-center">${item.jenis}</td><td class="text-center">${item.jamMasuk || '-'}</td><td class="text-center">${item.jamPulang || '-'}</td><td ${clsM}>${item.kalkulasiMasuk}</td><td ${clsP}>${item.kalkulasiPulang}</td><td>${item.fotoMasuk || '-'}</td><td>${item.fotoPulang || '-'}</td></tr>`;
       });
 
