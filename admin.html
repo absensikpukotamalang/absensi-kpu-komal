@@ -1,411 +1,990 @@
-const SPREADSHEET_ID = "16nT6IFgXgr0X--BydIZz-zpeIweJveWY8mpVtwph8x8";
-const FOLDER_ID = "1B67bFKotG-0o1CEG9YAXd-03Q4NPDyt0";
-const TZ = "Asia/Jakarta";
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PANEL MONITORING ADMIN - KPU KOTA MALANG</title>
+  <style>
+    :root {
+      --admin-color: #2b6cb0;
+      --admin-dark: #1a365d;
+      --bg-gradient: linear-gradient(135deg, #2b6cb0 0%, #1a365d 100%);
+      --gray-light: #f7fafc;
+      --text-dark: #2d3748;
+      --success: #38a169;
+      --danger: #e53e3e;
+      --warning: #dd6b20;
+      --purple: #6b46c1;
+      --orange-dark: #c05621;
+    }
  
-// =====================================================
-// GET DATA PEGAWAI, SETTING, & REKAP ABSENSI (GET)
-// =====================================================
-function doGet(e) {
-  try {
-    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-    const action = e && e.parameter && e.parameter.action ? e.parameter.action : "init";
-    const mode = e && e.parameter && e.parameter.mode ? e.parameter.mode : "";
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg-gradient); min-height: 100vh; color: #fff; padding: 15px; }
  
-    // PROSES REQUEST DATA ABSENSI KE PANEL ADMIN
-    if (action === "rekap" || mode === "admin_laporan") {
-      const sheetAbsen = ss.getSheetByName("ABSENSI");
-      const sheetManual = ss.getSheetByName("INPUT_MANUAL");
-      if (!sheetAbsen) return jsonOutput({ result: "error", message: "Sheet ABSENSI tidak ditemukan" });
+    .container { max-width: 100%; width: 99%; margin: 0 auto; }
+    header { text-align: center; margin-bottom: 20px; }
+    header h1 { font-size: 24px; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+    header p { font-size: 13px; opacity: 0.9; margin-top: 5px; }
+    
+    .login-wrapper { display: flex; justify-content: center; align-items: center; min-height: 85vh; }
+    .login-card {
+      background: white; color: var(--text-dark); padding: 30px; border-radius: 16px;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.3); width: 100%; max-width: 400px;
+      text-align: center; animation: fadeIn 0.3s ease-in-out;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+    .login-card h2 { color: var(--admin-dark); margin-bottom: 5px; font-size: 20px; }
+    .login-card p { color: #718096; font-size: 13px; margin-bottom: 20px; }
+    .error-msg { color: var(--danger); font-size: 13px; font-weight: bold; margin-top: 10px; display: none; }
+ 
+    .nav-menu { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+    .nav-item { 
+      flex: 1; min-width: 160px; padding: 14px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2); 
+      border-radius: 12px; text-align: center; font-weight: bold; cursor: pointer; transition: all 0.2s; 
+      font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    .nav-item.active { background: #fff; color: var(--admin-color); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+ 
+    .card { background: #ffffff; color: var(--text-dark); padding: 20px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); margin-bottom: 20px; }
+    h3 { color: var(--admin-color); margin-bottom: 15px; text-transform: uppercase; border-bottom: 2px solid #edf2f7; padding-bottom: 8px; font-size: 16px; letter-spacing: 0.5px; }
+    
+    label { font-size: 13px; font-weight: 600; color: #4a5568; display: block; margin-top: 10px; margin-bottom: 5px; }
+    select, input, textarea { width: 100%; padding: 12px; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 14px; outline: none; background: var(--gray-light); color: var(--text-dark); font-family: inherit; }
+    select:focus, input:focus, textarea:focus { border-color: var(--admin-color); background: #fff; }
+ 
+    .filter-group { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 5px; }
+    
+    button { width: 100%; padding: 14px; background: var(--admin-color); color: white; border: none; border-radius: 10px; font-weight: bold; font-size: 15px; cursor: pointer; margin-top: 15px; transition: background 0.2s; text-transform: uppercase; letter-spacing: 0.5px; }
+    button:hover { background: var(--admin-dark); }
+    
+    .btn-excel {
+      width: auto; display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px;
+      background-color: #107c41; color: white; border: none; border-radius: 8px;
+      font-weight: bold; font-size: 13px; cursor: pointer; margin-top: 20px; margin-bottom: 5px; transition: background 0.2s;
+    }
+    .btn-excel:hover { background-color: #0b592e; }
+ 
+    .table-responsive { width: 100%; overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 12px; background: white; margin-top: 10px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; } 
+    
+    .table-laporan-admin th, .table-laporan-admin td { padding: 10px 6px; border-bottom: 1px solid #e2e8f0; vertical-align: middle; }
+    th { background: var(--admin-color); color: white; font-weight: 600; text-align: left; padding: 10px 6px; }
+    th.sortable { cursor: pointer; position: relative; user-select: none; }
+    th.sortable:hover { background: var(--admin-dark); }
+    tr:nth-child(even) { background: #f8fafc; }
+    .text-center { text-align: center; }
+    
+    .img-preview-table { 
+      width: 40px; height: 40px; object-fit: cover; border-radius: 6px; border: 1.5px solid #cbd5e0; 
+      cursor: pointer; transition: transform 0.2s; display: block; margin: 0 auto; 
+    }
+    .img-preview-table:hover { transform: scale(1.25); z-index: 10; position: relative; }
+    
+    .operator-badge { background: #feebc8; color: #c05621; padding: 8px 15px; border-radius: 8px; font-size: 13px; font-weight: bold; margin-bottom: 15px; display: inline-block; }
+    .loading-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 9999; font-weight: bold; font-size: 15px; }
+    .status-badge { padding: 3px 6px; border-radius: 5px; font-weight: bold; font-size: 11px; display: inline-block; }
+ 
+    .btn-action { padding: 4px 8px; border-radius: 6px; border: none; font-size: 11px; font-weight: bold; cursor: pointer; color: white; text-transform: uppercase; margin: 2px; display: inline-block; width: auto; }
+    .btn-edit { background: var(--warning); } .btn-edit:hover { background: #b75313; }
+    .btn-delete { background: var(--danger); } .btn-delete:hover { background: #b72b2b; }
+ 
+    .photo-modal {
+      display: none; position: fixed; z-index: 10000; top: 0; left: 0; width: 100%; height: 100%;
+      background-color: rgba(0, 0, 0, 0.65); align-items: center; justify-content: center; backdrop-filter: blur(4px);
+    }
+    .modal-content-card {
+      background: white; padding: 15px; border-radius: 16px; position: relative; max-width: 400px; width: 85%;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.4); text-align: center; animation: zoomInAnim 0.2s ease-out;
+    }
+    @keyframes zoomInAnim { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    .modal-image { width: 100%; height: auto; max-height: 400px; object-fit: contain; border-radius: 8px; border: 1px solid #e2e8f0; background: #f7fafc; }
+    .modal-info-text { color: var(--text-dark); font-size: 13px; font-weight: bold; margin-top: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .close-modal-btn {
+      position: absolute; top: -10px; right: -10px; background: var(--danger); color: white; border: 2px solid white;
+      width: 30px; height: 30px; border-radius: 50%; font-weight: bold; font-size: 14px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+ 
+    .meta-kinerja-box {
+      background: var(--gray-light); padding: 15px; border-radius: 10px; border-left: 5px solid var(--purple); margin-bottom: 20px; font-size: 14px; display: none;
+    }
+    .meta-kinerja-box table { width: auto; min-width: 300px; }
+    .meta-kinerja-box td { padding: 4px 8px; border: none; }
+    .meta-kinerja-box tr:nth-child(even) { background: transparent; }
+ 
+    .view-panel { display: none; }
+  </style>
+</head>
+<body>
+ 
+  <div class="loading-overlay" id="loading">Sinkronisasi Basis Data Eksternal... Mohon Tunggu...</div>
+ 
+  <div class="photo-modal" id="imagePopUpModal" onclick="tutupPopUpFoto()">
+    <div class="modal-content-card" onclick="event.stopPropagation()">
+      <button class="close-modal-btn" onclick="tutupPopUpFoto()">✕</button>
+      <img src="" class="modal-image" id="modalTargetImg" alt="Detail Presensi">
+      <div class="modal-info-text" id="modalTargetLabel">Nama Pegawai</div>
+    </div>
+  </div>
+
+  <div class="photo-modal" id="noteEditModal" onclick="tutupModalCatatan()">
+    <div class="modal-content-card" onclick="event.stopPropagation()" style="max-width: 450px; text-align: left;">
+      <button class="close-modal-btn" onclick="tutupModalCatatan()">✕</button>
+      <h3 style="margin-bottom: 15px; color: var(--admin-color);">Detail & Catatan Presensi</h3>
       
-      const dataAbsenRaw = sheetAbsen.getDataRange().getValues();
-      const absensi = [];
-      const sheetSetting = ss.getSheetByName("SETTING");
+      <div style="color: var(--text-dark); font-size: 13px; line-height: 1.6;">
+        <p><strong>Nama:</strong> <span id="lblDetailNama">-</span></p>
+        <p><strong>Tanggal:</strong> <span id="lblDetailTanggal">-</span></p>
+        <p><strong>Status / Jam:</strong> <span id="lblDetailStatusJam">-</span></p>
+      </div>
+      <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 12px 0;">
       
-      // 1. Ambil data dari sheet ABSENSI Utama (Otomatis dari Mobile)
-      for (let i = 1; i < dataAbsenRaw.length; i++) {
-        const row = dataAbsenRaw[i];
-        if (!row[0] || !row[1]) continue; 
+      <input type="hidden" id="txtNoteRowId" value="">
+      <input type="hidden" id="txtNoteIsManual" value="">
+      
+      <label for="txtAreaCatatanAdmin" style="margin-top: 0;">Catatan Tambahan Admin:</label>
+      <textarea id="txtAreaCatatanAdmin" rows="4" placeholder="Tambahkan catatan atau memo internal untuk pegawai ini..."></textarea>
+      
+      <button onclick="simpanPerubahanCatatanDashboard()" style="background: var(--admin-color); margin-top: 15px;">SIMPAN CATATAN</button>
+    </div>
+  </div>
+ 
+  <div class="container">
+     
+    <div class="login-wrapper" id="view-login-gate" style="display: flex;">
+      <div class="login-card">
+       <h2>PANEL AKSES KPU</h2>
+       <p>Silakan masukkan kredensial administrator</p>
         
-        let tanggalFormated = row[0];
-        if (row[0] instanceof Date) {
-          tanggalFormated = Utilities.formatDate(row[0], TZ, "dd/MM/yy");
-        }
+        <label style="text-align: left;">Username</label>
+        <input type="text" id="txtUsername" value="admin" placeholder="Masukkan username admin..." autocomplete="off">
+        
+        <label style="text-align: left;">Password</label>
+        <input type="password" id="txtPassword" placeholder="Masukkan sandi..." onkeypress="handleLoginKeyPress(event)">
+        
+        <div class="error-msg" id="loginError">Username atau Password salah!</div>
+        
+        <button onclick="prosesValidasiLogin()" style="margin-top: 25px; background: var(--admin-dark);">MASUK SISTEM</button>
+      </div>
+    </div>
  
-        absensi.push({
-          rowId: i + 1,
-          isManual: false, // Penanda bahwa ini data otomatis
-          tanggal: tanggalFormated,
-          nip: String(row[1] || ""),
-          nama: String(row[2] || ""),
-          jenis: String(row[3] || ""),
-          jamMasuk: normalizeJamFromCell(row[4]),
-          jamPulang: normalizeJamFromCell(row[5]),
-          jabatan: String(row[6] || ""),
-          atasan: String(row[7] || ""),
-          uraian_tugas: String(row[8] || ""),
-          output: String(row[9] || ""),
-          alamat: String(row[10] || ""),
-          fotoMasuk: String(row[11] || ""),
-          fotoPulang: String(row[12] || ""),
-          keterangan: (row[13] !== undefined && row[13] !== "") ? String(row[13]) : "0"
-        });
+    <div id="view-admin-main" style="display: none;">
+      <div class="operator-badge" id="badgeOperator">Sesi Aktif Admin: System Admin</div>
+ 
+      <div class="nav-menu">
+        <div class="nav-item active" id="tab-laporan" onclick="switchAdminTab('laporan')">📊 Dashboard Laporan</div>
+        <div class="nav-item" id="tab-kinerja" onclick="switchAdminTab('kinerja')">📈 Laporan Kinerja</div>
+        <div class="nav-item" id="tab-keterlambatan" onclick="switchAdminTab('keterlambatan')">⏱️ Rekap Keterlambatan</div>
+        <div class="nav-item" id="tab-input" onclick="switchAdminTab('input')">✍️ Input Manual</div>
+      </div>
+ 
+      <div class="card view-panel" id="panel-laporan" style="display: block;">
+       <h3>Saringan Data Rekapitulasi</h3>
+        
+        <div class="filter-group" style="margin-bottom: 10px;">
+          <div>
+            <label for="filterNamaPegawai">Filter Nama Pegawai</label>
+            <select id="filterNamaPegawai">
+             <option value="">-- Semua Pegawai --</option>
+           </select>
+          </div>
+          <div>
+            <label for="filterType">Metode Penarikan</label>
+            <select id="filterType" onchange="toggleFilterFields()">
+             <option value="harian" selected>Laporan Harian</option>
+             <option value="bulanan">Laporan Bulanan</option>
+             <option value="custom">Kustom Rentang Tanggal (Custom Date)</option>
+           </select>
+          </div>
+        </div>
+ 
+        <div class="filter-group">
+          <div id="div-tglAwal" style="display:block;">
+            <label id="lbl-tglAwal">Pilih Tanggal</label>
+            <input type="date" id="filterTglAwal">
+          </div>
+          <div id="div-tglAkhir" style="display:none;">
+           <label>Sampai Tanggal</label>
+            <input type="date" id="filterTglAkhir">
+          </div>
+          <div id="div-bulan" style="display:none;">
+           <label>Pilih Bulan & Tahun</label>
+            <input type="month" id="filterBulan">
+          </div>
+        </div>
+ 
+        <button onclick="tarikLaporanAdmin()">PROSES DATA REKAP</button>
+ 
+        <div style="text-align: right;">
+          <button class="btn-excel" onclick="exportKeExcelLaporan()"> Excel &nbsp;📥 EXPORT TO EXCEL</button>
+        </div>
+ 
+        <div class="table-responsive">
+          <table class="table-laporan-admin">
+           <thead>
+             <tr>
+               <th>Tanggal</th>
+               <th>NIP</th>
+               <th>Nama Pegawai</th>
+               <th>Status</th>
+               <th>Masuk</th>
+               <th>Pulang</th>
+               <th>Ket. Masuk</th>
+               <th>Ket. Pulang</th>
+               <th>Catatan Admin</th>
+               <th class="text-center">F.Masuk</th>
+               <th class="text-center">F.Pulang</th>
+               <th class="text-center" style="width: 130px;">Aksi Pengelola</th>
+             </tr>
+           </thead>
+            <tbody id="bodyLaporanAdmin">
+             <tr>
+                <td colspan="12" class="text-center" style="color:#a0aec0; padding:20px;">Data siap ditarik.</td>
+             </tr>
+           </tbody>
+         </table>
+        </div>
+      </div>
+ 
+      <div class="card view-panel" id="panel-kinerja">
+        <h3 style="color: var(--purple); border-bottom-color: #e9d8fd;">Laporan Performa Kinerja Pegawai</h3>
+        
+        <div class="filter-group">
+          <div>
+            <label for="kinerjaPegawai">Pilih Nama Pegawai</label>
+            <select id="kinerjaPegawai" onchange="bersihkanTabelKinerja()">
+             <option value="">-- Memuat Data Pegawai... --</option>
+           </select>
+          </div>
+          <div>
+            <label for="kinerjaTglAwal">Mulai Tanggal</label>
+            <input type="date" id="kinerjaTglAwal">
+          </div>
+          <div>
+            <label for="kinerjaTglAkhir">Sampai Tanggal</label>
+            <input type="date" id="kinerjaTglAkhir">
+          </div>
+        </div>
+ 
+        <button onclick="prosesLaporanKinerja()" style="background: var(--purple);">PROSES DATA KINERJA</button>
+ 
+        <div style="text-align: right;">
+          <button class="btn-excel" onclick="exportKeExcelKinerja()" style="background-color: #107c41; margin-top: 20px; margin-bottom: 5px;"> Excel &nbsp;📥 EXPORT KINERJA TO EXCEL</button>
+        </div>
+ 
+        <div class="meta-kinerja-box" id="boxMetaKinerja">
+         <table>
+           <tr><td style="font-weight: bold; width: 100px;">Nama</td><td>: <span id="lblKinerjaNama">-</span></td></tr>
+           <tr><td style="font-weight: bold;">NIP</td><td>: <span id="lblKinerjaNIP">-</span></td></tr>
+           <tr><td style="font-weight: bold;">Jabatan</td><td>: <span id="lblKinerjaJabatan">-</span></td></tr>
+           <tr><td style="font-weight: bold;">Atasan</td><td>: <span id="lblKinerjaAtasan">-</span></td></tr>
+         </table>
+        </div>
+ 
+        <div class="table-responsive" style="margin-top: 15px;">
+          <table style="table-layout: auto;">
+           <thead>
+             <tr>
+                <th style="width: 5%; text-align: center; background-color: var(--purple);">No</th>
+                <th style="width: 12%; text-align: center; background-color: var(--purple);">Hari</th>
+                <th style="width: 13%; text-align: center; background-color: var(--purple);">Tanggal</th>
+                <th style="width: 45%; background-color: var(--purple);">Uraian Tugas / Aktivitas</th>
+                <th style="width: 25%; background-color: var(--purple);">Output Kerja / Berkas</th>
+             </tr>
+           </thead>
+            <tbody id="bodyLaporanKinerja">
+             <tr>
+                <td colspan="5" class="text-center" style="color:#a0aec0; padding:20px;">Silakan tentukan saringan data di atas lalu klik tombol proses.</td>
+             </tr>
+           </tbody>
+         </table>
+        </div>
+      </div>
+ 
+      <div class="card view-panel" id="panel-keterlambatan">
+        <h3 style="color: var(--warning); border-bottom-color: #feebc8;">Rekap Analisis Keterlambatan Pegawai</h3>
+        
+        <div class="filter-group">
+          <div>
+            <label for="delayTglAwal">Mulai Tanggal</label>
+            <input type="date" id="delayTglAwal">
+          </div>
+          <div>
+            <label for="delayTglAkhir">Sampai Tanggal</label>
+            <input type="date" id="delayTglAkhir">
+          </div>
+          <div>
+            <label for="sortDelayType">Urutkan Berdasarkan</label>
+            <select id="sortDelayType" onchange="urutkanTabelKeterlambatan()">
+             <option value="menit-desc" selected>Total Menit (Paling Tinggi)</option>
+             <option value="menit-asc">Total Menit (Paling Rendah)</option>
+             <option value="frekuensi-desc">Frekuensi Terlambat (Paling Sering)</option>
+             <option value="frekuensi-asc">Frekuensi Terlambat (Paling Sering)</option>
+             <option value="nama-asc">Nama Pegawai (A - Z)</option>
+           </select>
+          </div>
+        </div>
+ 
+        <button onclick="prosesRekapKeterlambatan()" style="background: var(--warning);">HITUNG REKAP KETERLAMBATAN</button>
+ 
+        <div class="table-responsive" style="margin-top: 15px;">
+         <table>
+           <thead>
+             <tr>
+                <th style="width: 25%; background-color: var(--warning)">NIP</th>
+                <th style="width: 35%; background-color: var(--warning)">Nama Pegawai</th>
+                <th class="sortable text-center" style="width: 20%; background-color: var(--warning)" onclick="toggleSortViaHeader('frekuensi')">Frekuensi Terlambat ⇅</th>
+                <th class="sortable text-center" style="width: 20%; background-color: var(--warning)" onclick="toggleSortViaHeader('menit')">Total Durasi (Menit) ⇅</th>
+             </tr>
+           </thead>
+            <tbody id="bodyRekapKeterlambatan">
+             <tr>
+                <td colspan="4" class="text-center" style="color:#a0aec0; padding:20px;">Tentukan rentang tanggal lalu klik tombol proses.</td>
+             </tr>
+           </tbody>
+         </table>
+        </div>
+      </div>
+ 
+      <div class="card view-panel" id="panel-input">
+        <h3 id="txtHeaderFormManual">Formulir Input Ketidakhadiran Pegawai</h3>
+        <input type="hidden" id="txtEditRowId" value="">
+        
+        <label for="inputPegawai">Pilih Pegawai yang Berhalangan</label>
+        <select id="inputPegawai"><option value="">-- Mohon Tunggu, Memuat Data... --</option></select>
+        
+        <label for="inputTanggal">Pilih Tanggal Berlaku</label>
+        <input type="date" id="inputTanggal">
+        
+        <label for="inputJenis">Status Ketidakhadiran / Jenis Presensi</label>
+        <select id="inputJenis" onchange="adjustFormRequirement()">
+          <option value="CUTI SAKIT">CUTI SAKIT</option>
+          <option value="CUTI TAHUNAN">CUTI TAHUNAN</option>
+          <option value="CUTI BESAR">CUTI BESAR</option>
+          <option value="CUTI MELAHIRKAN">CUTI MELAHIRKAN</option>
+          <option value="CUTI ALASAN PENTING">CUTI ALASAN PENTING</option>
+          <option value="CLTN">CLTN (Cuti Di Luar Tanggungan Negara)</option>
+       </select>
+ 
+        <div id="wrapper-opsional-jam" style="display: none; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div>
+           <label>Jam Masuk Manual (HH:MM)</label>
+            <input type="text" id="inputJamMasuk" placeholder="07:30">
+          </div>
+          <div>
+           <label>Jam Pulang Manual (HH:MM)</label>
+            <input type="text" id="inputJamPulang" placeholder="16:00">
+          </div>
+        </div>
+        
+        <label for="inputKeterangan">Keterangan Tambahan / Catatan Admin</label>
+        <textarea id="inputKeterangan" rows="3" placeholder="Tuliskan alasan ketidakhadiran atau uraian tugas manual..."></textarea>
+        
+        <button id="btnSubmitManual" onclick="kirimManualAdmin()" style="background: var(--success);">SIMPAN DATA ABSENSI</button>
+        <button id="btnCancelEdit" onclick="resetFormManual()" style="background: #718096; margin-top: 5px; display: none;">BATALKAN EDIT</button>
+      </div>
+    </div>
+  </div>
+ 
+ <script>
+    const API = "https://script.google.com/macros/s/AKfycbxl0fJC2790vwN9DYnr6xCXW_BBuMAIP0M7btnF4SIpwzAw4dV1hTMDP1f6k652sp4/exec";
+    const adminAktif = "System Admin";
+    let daftarPegawaiCache = [];
+    let dataLaporanSekarang = [];
+    let dataKinerjaSekarang = [];
+    let databaseMentahAbsen = []; 
+    let rekapKeterlambatanProcessed = [];
+    
+    let jamKerjaSetting = { masukSeninKamis: "07:30", pulangSeninKamis: "16:00", masukJumat: "07:30", pulangJumat: "16:30" };
+ 
+    function showLoading(show) { document.getElementById('loading').style.display = show ? 'flex' : 'none'; }
+ 
+    function prosesValidasiLogin() {
+      const userIn = document.getElementById("txtUsername").value.trim();
+      const passIn = document.getElementById("txtPassword").value.trim();
+      const errorDiv = document.getElementById("loginError");
+ 
+      if (userIn === "admin" && passIn === "admin2026") {
+       errorDiv.style.display = "none";
+       document.getElementById("view-login-gate").style.display = "none";
+       document.getElementById("view-admin-main").style.display = "block";
+       aktifkanSistemUtamaAdmin();
+      } else {
+       errorDiv.style.display = "block";
+       document.getElementById("txtPassword").value = "";
+       document.getElementById("txtPassword").focus();
       }
+    }
  
-      // 2. Ambil data dari sheet INPUT_MANUAL jika ada, lalu gabungkan ke list dashboard
-      if (sheetManual) {
-        const dataManualRaw = sheetManual.getDataRange().getValues();
-        for (let i = 1; i < dataManualRaw.length; i++) {
-          const row = dataManualRaw[i];
-          if (!row[0] || !row[2]) continue; // ID_INPUT & NIP wajib ada
+    function handleLoginKeyPress(e) { if (e.key === "Enter") { prosesValidasiLogin(); } }
  
-          let tglFormated = row[1];
-          if (row[1] instanceof Date) {
-            tglFormated = Utilities.formatDate(row[1], TZ, "dd/MM/yy");
-          }
+    async function aktifkanSistemUtamaAdmin() {
+      const kini = new Date();
+      const formatter = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta', year: 'numeric', month: '2-digit', day: '2-digit' });
+      const tglHariIni = formatter.format(kini);
+      const blnHariIni = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta', year: 'numeric', month: '2-digit' }).format(kini);
  
-          absensi.push({
-            rowId: row[0], // Menggunakan ID_INPUT string/unik sebagai rowId di frontend
-            isManual: true, // Penanda bahwa ini data MANUAL (Bisa di-CRUD!)
-            tanggal: tglFormated,
-            nip: String(row[2] || ""),
-            nama: String(row[3] || ""),
-            jenis: String(row[6] || ""), // JENIS PRESENSI
-            jamMasuk: "-",
-            jamPulang: "-",
-            jabatan: String(row[4] || ""),
-            atasan: String(row[5] || ""),
-            uraian_tugas: String(row[7] || ""), 
-            output: "Input Manual oleh Admin",
-            alamat: "Kantor KPU Kota Malang",
-            fotoMasuk: "-",
-            fotoPulang: "-",
-            keterangan: String(row[7] || "")
+      document.getElementById("filterTglAwal").value = tglHariIni;
+      document.getElementById("filterBulan").value = blnHariIni;
+      document.getElementById("filterType").value = "harian";
+      document.getElementById("filterNamaPegawai").value = "";
+      
+      document.getElementById("kinerjaTglAwal").value = tglHariIni;
+      document.getElementById("kinerjaTglAkhir").value = tglHariIni;
+      document.getElementById("delayTglAwal").value = tglHariIni;
+      document.getElementById("delayTglAkhir").value = tglHariIni;
+      
+      toggleFilterFields();
+      await muatDaftarPegawaiAdmin();
+      tarikLaporanAdmin(); 
+    }
+ 
+    function switchAdminTab(target) {
+      document.getElementById('panel-laporan').style.display = 'none';
+      document.getElementById('panel-kinerja').style.display = 'none';
+      document.getElementById('panel-keterlambatan').style.display = 'none';
+      document.getElementById('panel-input').style.display = 'none';
+      
+      document.getElementById('tab-laporan').classList.remove('active');
+      document.getElementById('tab-kinerja').classList.remove('active');
+      document.getElementById('tab-keterlambatan').classList.remove('active');
+      document.getElementById('tab-input').classList.remove('active');
+      
+      if (target === 'laporan') {
+       document.getElementById('panel-laporan').style.display = 'block';
+       document.getElementById('tab-laporan').classList.add('active');
+      } else if (target === 'kinerja') {
+       document.getElementById('panel-kinerja').style.display = 'block';
+       document.getElementById('tab-kinerja').classList.add('active');
+      } else if (target === 'keterlambatan') {
+       document.getElementById('panel-keterlambatan').style.display = 'block';
+       document.getElementById('tab-keterlambatan').classList.add('active');
+      } else {
+       document.getElementById('panel-input').style.display = 'block';
+       document.getElementById('tab-input').classList.add('active');
+      }
+    }
+ 
+    function toggleFilterFields() {
+      const type = document.getElementById("filterType").value;
+      document.getElementById("div-tglAwal").style.display = (type === "harian" || type === "custom") ? "block" : "none";
+      document.getElementById("div-tglAkhir").style.display = (type === "custom") ? "block" : "none";
+      document.getElementById("div-bulan").style.display = (type === "bulanan") ? "block" : "none";
+      document.getElementById("lbl-tglAwal").innerText = type === "custom" ? "Dari Tanggal" : "Pilih Tanggal";
+    }
+ 
+    function adjustFormRequirement() {
+      document.getElementById("wrapper-opsional-jam").style.display = "none";
+    }
+ 
+    async function muatDaftarPegawaiAdmin() {
+      try {
+        const res = await fetch(API);
+        const data = await res.json();
+        if(data.result === "success") {
+          daftarPegawaiCache = data.pegawai;
+          
+          const selectLapor = document.getElementById("filterNamaPegawai");
+          const selectManual = document.getElementById("inputPegawai");
+          const selectKiner = document.getElementById("kinerjaPegawai");
+          
+          selectLapor.innerHTML = '<option value="">-- Semua Pegawai --</option>';
+          selectManual.innerHTML = '<option value="">-- Pilih Pegawai --</option>';
+          selectKiner.innerHTML = '<option value="">-- Pilih Pegawai --</option>';
+          
+          daftarPegawaiCache.forEach(p => {
+            const rowText = `${p.nama} (${p.nip})`;
+            selectLapor.appendChild(new Option(rowText, p.nip));
+            selectManual.appendChild(new Option(rowText, p.nip));
+            selectKiner.appendChild(new Option(rowText, p.nip));
           });
         }
-      }
+      } catch(e) { console.error(e); }
+    }
  
-      let settingJamKerja = {
-        masukSeninKamis: "07:30", pulangSeninKamis: "16:00",
-        masukJumat: "07:30", pulangJumat: "16:30"
-      };
+    function konversiKeDirectLinkDrive(urlDrive) {
+      if (!urlDrive || urlDrive.trim() === "" || urlDrive === "-") return "";
+      let fileId = "";
+      if (urlDrive.includes("id=")) fileId = urlDrive.split("id=")[1].split("&")[0]; 
+      else if (urlDrive.includes("/d/")) fileId = urlDrive.split("/d/")[1].split("/")[0]; 
+      else if (urlDrive.includes("file/d/")) fileId = urlDrive.split("file/d/")[1].split("/")[0];
+      return fileId ? `https://drive.google.com/thumbnail?id=${fileId}&sz=w400` : urlDrive;
+    }
  
-      if (sheetSetting) {
-        const dataSettingRaw = sheetSetting.getDataRange().getValues();
-        for (let i = 1; i < dataSettingRaw.length; i++) {
-          const k = String(dataSettingRaw[i][0] || "").trim();
-          let v = dataSettingRaw[i][1];
-          let vText = (v instanceof Date) ? Utilities.formatDate(v, TZ, "HH:mm") : String(v || "").trim();
+    function bukaPopUpFoto(urlDirect, namaPegawai, tipeAbsen) {
+      document.getElementById("modalTargetImg").src = urlDirect;
+      document.getElementById("modalTargetLabel").innerText = `${namaPegawai} (${tipeAbsen})`;
+      document.getElementById("imagePopUpModal").style.display = "flex";
+    }
+    function tutupPopUpFoto() { document.getElementById("imagePopUpModal").style.display = "none"; }
+    
+    function hitungMenitSelisih(wAwal, wAkhir) { return ((e, s) => (e[0]*60 + parseInt(e[1])) - (s[0]*60 + parseInt(s[1])))(wAkhir.split(":"), wAwal.split(":")); }
+    
+    function ambilIndexHariDariTglStr(tglStr) { 
+      let p = tglStr.split("/");
+      if(p[0].includes("-")) p = tglStr.split("-").reverse();
+      return new Date((p[2].length===2?"20"+p[2]:p[2]), p[1]-1, p[0]).getDay(); 
+    }
+ 
+    async function tarikLaporanAdmin() {
+      const type = document.getElementById("filterType").value;
+      const tglAwal = document.getElementById("filterTglAwal").value;
+      const tglAkhir = document.getElementById("filterTglAkhir").value;
+      const bulan = document.getElementById("filterBulan").value;
+      const nipSaring = document.getElementById("filterNamaPegawai").value;
+ 
+      if (!tglAwal && (type === "harian" || type === "custom")) { alert("Pilih tanggal awal!"); return; }
+      if (!tglAkhir && type === "custom") { alert("Pilih tanggal akhir rentang!"); return; }
+      if (!bulan && type === "bulanan") { alert("Pilih bulan laporan!"); return; }
+ 
+      showLoading(true);
+      const tbody = document.getElementById("bodyLaporanAdmin");
+      tbody.innerHTML = '<tr><td colspan="12" class="text-center">Sinkronisasi data rekap...</td></tr>';
+      dataLaporanSekarang = [];
+ 
+      try {
+        const res = await fetch(`${API}?mode=admin_laporan&type=${type}`);
+        const data = await res.json();
+        if(data.result === "success") {
+          tbody.innerHTML = "";
+          databaseMentahAbsen = data.data; 
           
-          if (k === "jam_masuk") settingJamKerja.masukSeninKamis = vText;
-          if (k === "jam_pulang") settingJamKerja.pulangSeninKamis = vText;
-          if (k === "jam_masuk_jumat") settingJamKerja.masukJumat = vText;
-          if (k === "jam_pulang_jumat") settingJamKerja.pulangJumat = vText;
-        }
-      }
-      
-      return jsonOutput({ result: "success", data: absensi, settingJamKerja: settingJamKerja });
-    }
+          if(data.settingJamKerja) jamKerjaSetting = data.settingJamKerja;
  
-    // DEFAULT ACTION: LOAD DATA PROFIL MASTER PEGAWAI
-    const sheetPegawai = ss.getSheetByName("PEGAWAI");
-    const sheetSetting = ss.getSheetByName("SETTING");
+          const dataDisaring = data.data.filter(item => {
+            if (nipSaring && String(item.nip || "").trim() !== String(nipSaring).trim()) return false;
+            
+            let itemDateStr = "";
+            if (item.tanggal.includes("/")) {
+              const p = item.tanggal.split("/");
+              itemDateStr = `${p[2].length===2?"20"+p[2]:p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
+            } else {
+              itemDateStr = item.tanggal;
+            }
  
-    if (!sheetPegawai || !sheetSetting) return jsonOutput({ result: "error", message: "Sheet Master Data Tidak Lengkap" });
+            if (type === "harian") return itemDateStr === tglAwal;
+            if (type === "bulanan") return itemDateStr.startsWith(bulan);
+            if (type === "custom") return itemDateStr >= tglAwal && itemDateStr <= tglAkhir;
+            return true;
+          });
  
-    const dataPegawaiRaw = sheetPegawai.getDataRange().getValues();
-    const dataSettingRaw = sheetSetting.getDataRange().getValues();
- 
-    const pegawai = [];
-    for (let i = 1; i < dataPegawaiRaw.length; i++) {
-      const row = dataPegawaiRaw[i];
-      if (!row[0]) continue;
-      pegawai.push({ nama: String(row[0]).trim(), nip: String(row[1]).trim(), jabatan: String(row[2]).trim(), atasan: String(row[3]).trim() });
-    }
- 
-    const setting = {};
-    for (let i = 1; i < dataSettingRaw.length; i++) {
-      const key = String(dataSettingRaw[i][0] || "").trim();
-      const value = dataSettingRaw[i][1];
-      if (!key) continue;
-      setting[key] = (value instanceof Date) ? Utilities.formatDate(value, TZ, "HH:mm") : String(value || "").trim();
-    }
- 
-    return jsonOutput({ result: "success", pegawai: pegawai, setting: setting });
- 
-  } catch (err) {
-    return jsonOutput({ result: "error", message: "doGet error: " + err.toString() });
-  }
-}
- 
-// =====================================================
-// SIMPAN, UBAH, & HAPUS DATA ABSENSI (POST)
-// =====================================================
-function doPost(e) {
-  try {
-    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-    const data = e && e.parameter ? e.parameter : {};
-    
-    // --- FITUR BARU: UPDATE CATATAN VIA DOUBLE CLICK DASHBOARD ---
-    if (data.action === "update_catatan") {
-      const isManual = data.isManual === "true";
-      const targetId = data.rowId;
-      const catatanBaru = data.catatan || "";
-      
-      if (isManual) {
-        const sheetManual = ss.getSheetByName("INPUT_MANUAL");
-        if (!sheetManual) return jsonOutput({ result: "error", message: "Sheet INPUT_MANUAL tidak ditemukan" });
-        
-        const dataManual = sheetManual.getDataRange().getValues();
-        let targetRowIndex = -1;
-        for (let i = 1; i < dataManual.length; i++) {
-          if (String(dataManual[i][0]).trim() === String(targetId).trim()) {
-            targetRowIndex = i + 1;
-            break;
+          if(dataDisaring.length === 0) { 
+            tbody.innerHTML = '<tr><td colspan="12" class="text-center" style="color:var(--danger); padding:15px;">Tidak ditemukan data presensi pada periode ini.</td></tr>'; 
+            return; 
           }
+          
+          dataDisaring.sort((a, b) => a.tanggal.split('/').reverse().join('').localeCompare(b.tanggal.split('/').reverse().join('')) || a.nama.localeCompare(b.nama));
+          dataLaporanSekarang = dataDisaring;
+ 
+          dataDisaring.forEach(item => {
+            const tr = document.createElement("tr");
+            
+            tr.style.cursor = "pointer";
+            tr.title = "Double click untuk melihat detail & edit catatan";
+            tr.ondblclick = () => { bukaModalCatatan(item); };
+ 
+            const urlMasukValid = konversiKeDirectLinkDrive(item.fotoMasuk);
+            const urlPulangValid = konversiKeDirectLinkDrive(item.fotoPulang);
+ 
+            const tagFotoMasuk = urlMasukValid ? `<img src="${urlMasukValid}" class="img-preview-table" onclick="event.stopPropagation(); bukaPopUpFoto('${urlMasukValid}', '${item.nama.replace(/'/g, "\\'")}', 'FOTO MASUK')">` : "-";
+            const tagFotoPulang = urlPulangValid ? `<img src="${urlPulangValid}" class="img-preview-table" onclick="event.stopPropagation(); bukaPopUpFoto('${urlPulangValid}', '${item.nama.replace(/'/g, "\\'")}', 'FOTO PULANG')">` : "-";
+            
+            let txtMasuk = "Tepat Waktu", warnaMasuk = "inherit";
+            let txtPulang = "Belum Absen", warnaPulang = "inherit";
+            const jenisUpper = (item.jenis || "").trim().toUpperCase();
+ 
+            if (!["WFO", "WFH", "WFA"].includes(jenisUpper)) {
+              txtMasuk = item.jenis; txtPulang = item.jenis;
+              warnaMasuk = "var(--warning)"; warnaPulang = "var(--warning)";
+            } else {
+              const jamPulangResmi = (ambilIndexHariDariTglStr(item.tanggal) === 5) ? jamKerjaSetting.pulangJumat : jamKerjaSetting.pulangSeninKamis;
+              if (item.keterangan && item.keterangan !== "0" && item.keterangan !== "-") {
+                if(!isNaN(item.keterangan)) {
+                  txtMasuk = `Terlambat ${item.keterangan} Menit`; warnaMasuk = "var(--danger)";
+                } else { txtMasuk = item.keterangan; }
+              }
+              if (item.jamPulang && item.jamPulang !== "-") {
+                if (hitungMenitSelisih(jamPulangResmi, item.jamPulang) >= 0) { txtPulang = "Tepat Waktu"; warnaPulang = "var(--success)"; }
+                else { txtPulang = "PSW"; warnaPulang = "var(--danger)"; }
+              }
+            }
+ 
+            item.kalkulasiMasuk = txtMasuk; item.kalkulasiPulang = txtPulang;
+            let bgBadge = "#edf2f7";
+            if(jenisUpper === "WFO") bgBadge = "#c6f6d5; color: #22543d;";
+            else if(jenisUpper === "WFH") bgBadge = "#feebc8; color: #744210;";
+            else if(["CUTI SAKIT","CUTI TAHUNAN","CUTI BESAR","CUTI MELAHIRKAN","CUTI ALASAN PENTING","CLTN"].includes(jenisUpper)) bgBadge = "#e9d8fd; color: #44337a;";
+            else bgBadge = "#fed7d7; color: #742a2a;"; 
+ 
+            const aksiTombol = item.isManual ? `
+                <button class="btn-action btn-edit" onclick="event.stopPropagation(); pemicuEditLaporan('${item.rowId}')">✏️</button>
+                <button class="btn-action btn-delete" onclick="event.stopPropagation(); pemicuHapusLaporan('${item.rowId}')">❌</button>
+            ` : `<span style="color:#cbd5e0; font-size:11px;">🔒 Mobile-Absen</span>`;
+ 
+            const cetakCatatan = (item.keterangan && item.keterangan !== "0" && item.keterangan !== "-") ? item.keterangan : "";
+ 
+            tr.innerHTML = `
+              <td>${item.tanggal}</td>
+              <td>${item.nip}</td>
+              <td><strong>${item.nama}</strong></td>
+              <td><span class="status-badge" style="background-color:${bgBadge}">${item.jenis}</span></td>
+              <td>${item.jamMasuk || '-'}</td>
+              <td>${item.jamPulang || '-'}</td>
+              <td style="color:${warnaMasuk}; font-weight:600;">${txtMasuk}</td>
+              <td style="color:${warnaPulang}; font-weight:600;">${txtPulang}</td>
+              <td style="font-style: italic; color: #4a5568; max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${cetakCatatan}">${cetakCatatan}</td>
+              <td class="text-center">${tagFotoMasuk}</td>
+              <td class="text-center">${tagFotoPulang}</td>
+              <td class="text-center">${aksiTombol}</td>
+            `;
+            tbody.appendChild(tr);
+          });
         }
-        if (targetRowIndex !== -1) {
-          sheetManual.getRange(targetRowIndex, 8).setValue(catatanBaru); // Kolom H (Keterangan)
-          SpreadsheetApp.flush();
-          return jsonOutput({ result: "success", message: "Catatan data manual berhasil diperbarui!" });
-        }
+      } catch(e) { console.error(e); } finally { showLoading(false); }
+    }
+ 
+    function pemicuEditLaporan(stringId) {
+      const target = databaseMentahAbsen.find(x => String(x.rowId) === String(stringId));
+      if(!target) return;
+      
+      switchAdminTab('input');
+      document.getElementById("txtHeaderFormManual").innerText = "Modifikasi Ketidakhadiran Pegawai (INPUT_MANUAL)";
+      document.getElementById("txtEditRowId").value = target.rowId;
+      document.getElementById("inputPegawai").value = target.nip;
+      document.getElementById("inputJenis").value = target.jenis;
+      
+      let formattedDate = "";
+      if (target.tanggal.includes("/")) {
+        const p = target.tanggal.split("/");
+        formattedDate = `${p[2].length===2?"20"+p[2]:p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
       } else {
-        const sheetAbsen = ss.getSheetByName("ABSENSI");
-        if (!sheetAbsen) return jsonOutput({ result: "error", message: "Sheet ABSENSI tidak ditemukan" });
-        
-        const rowIndex = parseInt(targetId);
-        if (!isNaN(rowIndex) && rowIndex > 1) {
-          sheetAbsen.getRange(rowIndex, 14).setValue(catatanBaru); // Kolom N (Keterangan/Catatan)
-          SpreadsheetApp.flush();
-          return jsonOutput({ result: "success", message: "Catatan absensi berhasil diperbarui!" });
-        }
+        formattedDate = target.tanggal;
       }
-      return jsonOutput({ result: "error", message: "Data tidak ditemukan untuk memperbarui catatan." });
+      document.getElementById("inputTanggal").value = formattedDate;
+      
+      adjustFormRequirement();
+      document.getElementById("inputKeterangan").value = target.keterangan !== "0" ? target.keterangan : "";
+      
+      document.getElementById("btnSubmitManual").innerText = "SIMPAN PERUBAHAN DATA";
+      document.getElementById("btnCancelEdit").style.display = "block";
     }
  
-    // -------------------------------------------------
-    // OPERASI CRUD KHUSUS SHEET INPUT_MANUAL
-    // -------------------------------------------------
-    if (data.action === "crud_manual") {
-      const sheetManual = ss.getSheetByName("INPUT_MANUAL");
-      if (!sheetManual) return jsonOutput({ result: "error", message: "Sheet INPUT_MANUAL tidak ditemukan" });
+    async function pemicuHapusLaporan(stringId) {
+      if(!confirm("Apakah Anda yakin ingin menghapus baris ketidakhadiran ini secara permanen dari sheet INPUT_MANUAL?")) return;
+      showLoading(true);
+      try {
+        const res = await fetch(API, { method: "POST", body: new URLSearchParams({ action: "crud_manual", ops: "DELETE", rowId: stringId }) });
+        const data = await res.json();
+        alert(data.message);
+        tarikLaporanAdmin();
+      } catch(e) { alert("Gagal mengeksekusi operasi hapus data manual."); } finally { showLoading(false); }
+    }
+ 
+    function resetFormManual() {
+      document.getElementById("txtHeaderFormManual").innerText = "Formulir Input Ketidakhadiran Pegawai";
+      document.getElementById("txtEditRowId").value = "";
+      document.getElementById("inputPegawai").value = "";
+      document.getElementById("inputTanggal").value = "";
+      document.getElementById("inputKeterangan").value = "";
+      document.getElementById("inputJenis").value = "CUTI TAHUNAN";
+      adjustFormRequirement();
+      document.getElementById("btnSubmitManual").innerText = "SIMPAN DATA ABSENSI";
+      document.getElementById("btnCancelEdit").style.display = "none";
+    }
+ 
+    async function kirimManualAdmin() {
+      const nip = document.getElementById("inputPegawai").value;
+      const tanggal = document.getElementById("inputTanggal").value;
+      const jenis = document.getElementById("inputJenis").value;
+      const keterangan = document.getElementById("inputKeterangan").value;
+      const editRowId = document.getElementById("txtEditRowId").value;
+ 
+      if(!nip || !tanggal) { alert("Kolom Pegawai dan Tanggal wajib ditentukan!"); return; }
+      const p = daftarPegawaiCache.find(x => x.nip === nip);
       
-      const subOps = data.ops; // "CREATE", "UPDATE", "DELETE"
-      const now = new Date();
-      const timestampText = Utilities.formatDate(now, TZ, "yyyy-MM-dd HH:mm:ss");
+      const form = new URLSearchParams();
+      form.append("action", "crud_manual");
+      form.append("ops", editRowId ? "UPDATE" : "CREATE");
+      if(editRowId) form.append("rowId", editRowId);
+ 
+      form.append("nip", nip);
+      form.append("nama", p.nama);
+      form.append("jabatan", p.jabatan);
+      form.append("atasan", p.atasan);
+      form.append("tanggal", tanggal);
+      form.append("jenis", jenis);
+      form.append("keterangan", keterangan);
+      form.append("adminActive", adminAktif);
+ 
+      showLoading(true);
+      try {
+        const res = await fetch(API, { method: "POST", body: form });
+        const data = await res.json();
+        if(data.result === "success") {
+          alert(data.message);
+          resetFormManual();
+          switchAdminTab('laporan');
+          tarikLaporanAdmin();
+        } else {
+          alert(data.message);
+        }
+      } catch(e) { alert("Gagal memproses pengiriman data ke INPUT_MANUAL."); } finally { showLoading(false); }
+    }
+ 
+    function bersihkanTabelKinerja() {
+      dataKinerjaSekarang = [];
+      document.getElementById("boxMetaKinerja").style.display = "none";
+      document.getElementById("bodyLaporanKinerja").innerHTML = '<tr><td colspan="5" class="text-center" style="color:#a0aec0; padding:20px;">Silakan klik tombol proses untuk memperbarui data.</td></tr>';
+    }
+ 
+    function prosesLaporanKinerja() {
+      const nip = document.getElementById("kinerjaPegawai").value;
+      const tglAwal = document.getElementById("kinerjaTglAwal").value;
+      const tglAkhir = document.getElementById("kinerjaTglAkhir").value;
+      const tbody = document.getElementById("bodyLaporanKinerja");
+ 
+      if (!nip || !tglAwal || !tglAkhir) { alert("Lengkapi filter saringan!"); return; }
+      const profil = daftarPegawaiCache.find(p => String(p.nip).trim() === String(nip).trim());
       
-      // --- OPERASI CREATE ---
-      if (subOps === "CREATE") {
-        const rawDate = new Date(data.tanggal);
-        const tglDisplay = Utilities.formatDate(rawDate, TZ, "yyyy-MM-dd");
-        
-        const randomId = "MNL-" + now.getTime() + "-" + Math.floor(Math.random() * 1000);
-        const nextRow = Math.max(sheetManual.getLastRow(), 1) + 1;
-        
-        sheetManual.getRange(nextRow, 1, 1, 10).setValues([[
-          randomId, tglDisplay, data.nip, data.nama, data.jabatan, data.atasan,
-          data.jenis, data.keterangan || "", data.adminActive || "Admin", timestampText
-        ]]);
-        
-        SpreadsheetApp.flush();
-        return jsonOutput({ result: "success", message: "Data ketidakhadiran berhasil disimpan ke INPUT_MANUAL!" });
+      document.getElementById("lblKinerjaNama").innerText = profil ? profil.nama : "-";
+      document.getElementById("lblKinerjaNIP").innerText = nip;
+      document.getElementById("lblKinerjaJabatan").innerText = profil ? profil.jabatan : "-";
+      document.getElementById("lblKinerjaAtasan").innerText = profil ? profil.atasan : "-";
+      document.getElementById("boxMetaKinerja").style.display = "block";
+ 
+      if (databaseMentahAbsen.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center" style="color:var(--danger);">Muat ulang rekap di Dashboard Laporan dahulu.</td></tr>';
+        return;
       }
+ 
+      const disaring = databaseMentahAbsen.filter(item => {
+        if (String(item.nip).trim() !== String(nip).trim()) return false;
+        let dStr = "";
+        if (item.tanggal.includes("/")) {
+          const p = item.tanggal.split("/");
+          dStr = `${p[2].length===2?"20"+p[2]:p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
+        } else {
+          dStr = item.tanggal;
+        }
+        return dStr >= tglAwal && dStr <= tglAkhir;
+      }).sort((a,b) => a.tanggal.split('/').reverse().join('').localeCompare(b.tanggal.split('/').reverse().join('')));
+ 
+      dataKinerjaSekarang = disaring;
+      tbody.innerHTML = disaring.length === 0 ? '<tr><td colspan="5" class="text-center">Tidak ada catatan performa / ketidakhadiran.</td></tr>' : "";
       
-      // --- OPERASI UPDATE ---
-      if (subOps === "UPDATE") {
-        const targetId = data.rowId;
-        const dataManual = sheetManual.getDataRange().getValues();
-        let targetRowIndex = -1;
+      const namaHari = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+ 
+      disaring.forEach((item, index) => {
+        const tr = document.createElement("tr");
+        const indexHari = ambilIndexHariDariTglStr(item.tanggal);
+        const hariText = namaHari[indexHari] || "-";
         
-        for (let i = 1; i < dataManual.length; i++) {
-          if (String(dataManual[i][0]).trim() === String(targetId).trim()) {
-            targetRowIndex = i + 1;
-            break;
+        let isiUraian = "";
+        let isiOutput = "";
+        const jenisUpper = (item.jenis || "").trim().toUpperCase();
+ 
+        if (!["WFO", "WFH", "WFA"].includes(jenisUpper)) {
+          isiUraian = item.jenis;
+          isiOutput = item.jenis;
+        } else {
+          isiUraian = item.uraian_tugas || item.keterangan || '-';
+          isiOutput = item.output || '-';
+        }
+ 
+        tr.innerHTML = `
+          <td class="text-center">${index + 1}</td>
+          <td class="text-center" style="font-weight:600; color:var(--admin-dark);">${hariText}</td>
+          <td class="text-center" style="font-weight:600; color:var(--admin-dark);">${item.tanggal}</td>
+          <td style="line-height:1.4; white-space:pre-line;">${isiUraian}</td>
+          <td style="line-height:1.4;">${isiOutput}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+ 
+    function exportKeExcelKinerja() {
+      if (dataKinerjaSekarang.length === 0) { alert("Tidak ada data laporan kinerja aktif! Silakan klik PROSES DATA KINERJA terlebih dahulu."); return; }
+      
+      const namaPegawai = document.getElementById("lblKinerjaNama").innerText;
+      const nipPegawai = document.getElementById("lblKinerjaNIP").innerText;
+      const jabatanPegawai = document.getElementById("lblKinerjaJabatan").innerText;
+      const atasanPegawai = document.getElementById("lblKinerjaAtasan").innerText;
+      
+      let excelTemplate = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="UTF-8"><style>body { font-family: sans-serif; } .judul { font-size: 16px; font-weight: bold; text-align: center; color: #6b46c1; } .meta-table td { font-weight: bold; padding: 3px; border: none; } th { background-color: #6b46c1; color: white; font-weight: bold; border: 1px solid #cbd5e0; padding: 8px; } td { border: 1px solid #e2e8f0; padding: 6px; } .text-center { text-align: center; }</style></head><body><table><tr><td colspan="5" class="judul">LAPORAN AKTIVITAS KINERJA PEGAWAI KPU KOTA MALANG</td></tr><tr><td colspan="5"></td></tr>`;
+      
+      excelTemplate += `
+        <tr class="meta-table"><td>Nama</td><td colspan="4">: ${namaPegawai}</td></tr>
+        <tr class="meta-table"><td>NIP</td><td colspan="4" style="mso-number-format:'\\@';">: '${nipPegawai}</td></tr>
+        <tr class="meta-table"><td>Jabatan</td><td colspan="4">: ${jabatanPegawai}</td></tr>
+        <tr class="meta-table"><td>Atasan</td><td colspan="4">: ${atasanPegawai}</td></tr>
+       <tr><td colspan="5"></td></tr>
+      `;
+ 
+      excelTemplate += `<thead><tr><th>No</th><th>Hari</th><th>Tanggal</th><th>Uraian Tugas / Aktivitas</th><th>Output Kerja / Berkas</th></tr></thead><tbody>`;
+ 
+      const namaHari = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+ 
+      dataKinerjaSekarang.forEach((item, index) => {
+        const indexHari = ambilIndexHariDariTglStr(item.tanggal);
+        const hariText = namaHari[indexHari] || "-";
+        
+        let isiUraian = "";
+        let isiOutput = "";
+        const jenisUpper = (item.jenis || "").trim().toUpperCase();
+ 
+        if (!["WFO", "WFH", "WFA"].includes(jenisUpper)) {
+          isiUraian = item.jenis;
+          isiOutput = item.jenis;
+        } else {
+          isiUraian = item.uraian_tugas || item.keterangan || '-';
+          isiOutput = item.output || '-';
+        }
+        
+        excelTemplate += `<tr><td class="text-center">${index + 1}</td><td class="text-center">${hariText}</td><td class="text-center">${item.tanggal}</td><td>${isiUraian}</td><td>${isiOutput}</td></tr>`;
+      });
+ 
+      excelTemplate += `</tbody></table></body></html>`;
+      
+      const blob = new Blob([excelTemplate], { type: "application/vnd.ms-excel;charset=utf-8;" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.setAttribute("download", `LAPORAN_KINERJA_${nipPegawai}_${new Date().toISOString().slice(0,10)}.xls`);
+      document.body.appendChild(link); link.click(); document.body.removeChild(link);
+    }
+ 
+    function prosesRekapKeterlambatan() {
+      const tglAwal = document.getElementById("delayTglAwal").value;
+      const tglAkhir = document.getElementById("delayTglAkhir").value;
+      const tbody = document.getElementById("bodyRekapKeterlambatan");
+ 
+      if (!tglAwal || !tglAkhir) { alert("Rentang tanggal wajib diisi!"); return; }
+      if (databaseMentahAbsen.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center">Database kosong. Lakukan penarikan di Dashboard Laporan dahulu.</td></tr>';
+        return;
+      }
+ 
+      let mapDelay = {};
+      daftarPegawaiCache.forEach(p => { mapDelay[p.nip] = { nip: p.nip, nama: p.nama, frekuensi: 0, totalMenit: 0 }; });
+ 
+      databaseMentahAbsen.forEach(item => {
+        let dStr = "";
+        if (item.tanggal.includes("/")) {
+          const p = item.tanggal.split("/");
+          dStr = `${p[2].length===2?"20"+p[2]:p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
+        } else {
+          dStr = item.tanggal;
+        }
+ 
+        if (dStr >= tglAwal && dStr <= tglAkhir) {
+          let menit = (!isNaN(item.keterangan) && item.keterangan !== "-" && item.keterangan !== "") ? parseInt(item.keterangan) : 0;
+          if (menit > 0) {
+            if (!mapDelay[item.nip]) mapDelay[item.nip] = { nip: item.nip, nama: item.nama || "Unknown", frekuensi: 0, totalMenit: 0 };
+            mapDelay[item.nip].frekuensi += 1; mapDelay[item.nip].totalMenit += menit;
           }
         }
-        
-        if (targetRowIndex === -1) {
-          return jsonOutput({ result: "error", message: "Data dengan ID " + targetId + " tidak ditemukan di sheet INPUT_MANUAL." });
-        }
-        
-        const rawDate = new Date(data.tanggal);
-        const tglDisplay = Utilities.formatDate(rawDate, TZ, "yyyy-MM-dd");
-        
-        sheetManual.getRange(targetRowIndex, 2, 1, 8).setValues([[
-          tglDisplay, data.nip, data.nama, data.jabatan, data.atasan,
-          data.jenis, data.keterangan || "", data.adminActive || "Admin"
-        ]]);
-        sheetManual.getRange(targetRowIndex, 10).setValue(timestampText);
-        
-        SpreadsheetApp.flush();
-        return jsonOutput({ result: "success", message: "Data INPUT_MANUAL berhasil diperbarui!" });
-      }
+      });
+ 
+      rekapKeterlambatanProcessed = Object.values(mapDelay);
+      urutkanTabelKeterlambatan();
+    }
+ 
+    function urutkanTabelKeterlambatan() {
+      const rule = document.getElementById("sortDelayType").value;
+      const tbody = document.getElementById("bodyRekapKeterlambatan");
+      if (rekapKeterlambatanProcessed.length === 0) return;
+ 
+      rekapKeterlambatanProcessed.sort((a, b) => {
+        if (rule === "menit-desc") return b.totalMenit - a.totalMenit;
+        if (rule === "menit-asc") return a.totalMenit - b.totalMenit;
+        if (rule === "frekuensi-desc") return b.frekuensi - a.frekuensi;
+        if (rule === "frekuensi-asc") return a.frekuensi - b.frekuensi;
+        return a.nama.localeCompare(b.nama);
+      });
+ 
+      const dataAda = rekapKeterlambatanProcessed.filter(x => x.totalMenit > 0);
+      tbody.innerHTML = dataAda.length === 0 ? '<tr><td colspan="4" class="text-center" style="color:var(--success); font-weight:bold;">Alhamdulillah! Tidak ada riwayat pegawai terlambat pada periode ini.</td></tr>' : "";
       
-      // --- OPERASI DELETE ---
-      if (subOps === "DELETE") {
-        const targetId = data.rowId;
-        const dataManual = sheetManual.getDataRange().getValues();
-        let targetRowIndex = -1;
+      dataAda.forEach(item => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td><code>${item.nip}</code></td><td><strong>${item.nama}</strong></td><td class="text-center" style="color:var(--orange-dark); font-weight:700;">${item.frekuensi} Kali</td><td class="text-center" style="color:var(--danger); font-weight:700;">${item.totalMenit} Menit</td>`;
+        tbody.appendChild(tr);
+      });
+    }
+ 
+    let sortToggleHeaderState = true;
+    function toggleSortViaHeader(tipe) {
+      sortToggleHeaderState = !sortToggleHeaderState;
+      document.getElementById("sortDelayType").value = tipe === 'frekuensi' ? (sortToggleHeaderState ? "frekuensi-desc" : "frekuensi-asc") : (sortToggleHeaderState ? "menit-desc" : "menit-asc");
+      urutkanTabelKeterlambatan();
+    }
+ 
+    function exportKeExcelLaporan() {
+      if (dataLaporanSekarang.length === 0) { alert("Tidak ada data laporan aktif!"); return; }
+      let excelTemplate = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="UTF-8"><style>body { font-family: sans-serif; } .judul { font-size: 16px; font-weight: bold; text-align: center; color: #1a365d; } th { background-color: #2b6cb0; color: white; font-weight: bold; border: 1px solid #cbd5e0; padding: 8px; } td { border: 1px solid #e2e8f0; padding: 6px; } .text-center { text-align: center; } .merah { color: red; font-weight: bold; } .hijau { color: green; font-weight: bold; } .oranye { color: orange; font-weight: bold; }</style></head><body><table><tr><td colspan="10" class="judul">LAPORAN REKAPITULASI PRESENSI PEGAWAI KPU KOTA MALANG</td></tr><tr><td colspan="10"></td></tr><thead><tr><th>Tanggal</th><th>NIP Pegawai</th><th>Nama Lengkap Pegawai</th><th>Status Kehadiran</th><th>Jam Masuk</th><th>Jam Pulang</th><th>Keterangan Masuk</th><th>Keterangan Pulang</th><th>Link Foto Masuk</th><th>Link Foto Pulang</th></tr></thead><tbody>`;
+ 
+      dataLaporanSekarang.forEach(item => {
+        let clsM = '', clsP = '';
+        if (!["WFO","WFH","WFA"].includes((item.jenis||"").toUpperCase())) { clsM = clsP = 'class="oranye"'; } 
+        else { clsM = item.kalkulasiMasuk.includes("Terlambat") ? 'class="merah"' : ''; clsP = item.kalkulasiPulang === "PSW" ? 'class="merah"' : (item.kalkulasiPulang === "Tepat Waktu" ? 'class="hijau"' : ''); }
+ 
+        excelTemplate += `<tr><td class="text-center">${item.tanggal}</td><td class="text-center" style="mso-number-format:'\\@';">'${item.nip}</td><td><b>${item.nama}</b></td><td class="text-center">${item.jenis}</td><td class="text-center">${item.jamMasuk || '-'}</td><td class="text-center">${item.jamPulang || '-'}</td><td ${clsM}>${item.kalkulasiMasuk}</td><td ${clsP}>${item.kalkulasiPulang}</td><td>${item.fotoMasuk || '-'}</td><td>${item.fotoPulang || '-'}</td></tr>`;
+      });
+ 
+      excelTemplate += `</tbody></table></body></html>`;
+      const blob = new Blob([excelTemplate], { type: "application/vnd.ms-excel;charset=utf-8;" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.setAttribute("download", `REKAP_PRESENSI_${document.getElementById("filterType").value.toUpperCase()}_${new Date().toISOString().slice(0,10)}.xls`);
+      document.body.appendChild(link); link.click(); document.body.removeChild(link);
+    }
+
+    // --- FUNGSI PENGENDALIAN MODAL CATATAN DASHBOARD VIA DOUBLE CLICK ---
+    function bukaModalCatatan(item) {
+      document.getElementById("lblDetailNama").innerText = `${item.nama} (${item.nip})`;
+      document.getElementById("lblDetailTanggal").innerText = item.tanggal;
+      document.getElementById("lblDetailStatusJam").innerText = `${item.jenis} [Masuk: ${item.jamMasuk || '-'} | Pulang: ${item.jamPulang || '-'}]`;
+      
+      document.getElementById("txtNoteRowId").value = item.rowId;
+      document.getElementById("txtNoteIsManual").value = item.isManual;
+      
+      let catatanDefault = (item.keterangan && item.keterangan !== "0" && item.keterangan !== "-") ? item.keterangan : "";
+      if(!isNaN(catatanDefault)) catatanDefault = ""; 
+      
+      document.getElementById("txtAreaCatatanAdmin").value = catatanDefault;
+      document.getElementById("noteEditModal").style.display = "flex";
+    }
+ 
+    function tutupModalCatatan() {
+      document.getElementById("noteEditModal").style.display = "none";
+    }
+ 
+    async function simpanPerubahanCatatanDashboard() {
+      const rowId = document.getElementById("txtNoteRowId").value;
+      const isManual = document.getElementById("txtNoteIsManual").value;
+      const catatanText = document.getElementById("txtAreaCatatanAdmin").value.trim();
+ 
+      showLoading(true);
+      tutupModalCatatan();
+ 
+      try {
+        const formParam = new URLSearchParams();
+        formParam.append("action", "update_catatan");
+        formParam.append("rowId", rowId);
+        formParam.append("isManual", isManual);
+        formParam.append("catatan", catatanText);
+ 
+        const res = await fetch(API, { method: "POST", body: formParam });
+        const data = await res.json();
         
-        for (let i = 1; i < dataManual.length; i++) {
-          if (String(dataManual[i][0]).trim() === String(targetId).trim()) {
-            targetRowIndex = i + 1;
-            break;
-          }
-        }
-        
-        if (targetRowIndex === -1) {
-          return jsonOutput({ result: "error", message: "Data gagal dihapus. ID tidak ditemukan." });
-        }
-        
-        sheetManual.deleteRow(targetRowIndex);
-        SpreadsheetApp.flush();
-        return jsonOutput({ result: "success", message: "Data ketidakhadiran berhasil dihapus dari sistem manual!" });
+        alert(data.message);
+        tarikLaporanAdmin(); 
+      } catch(e) {
+        console.error(e);
+        alert("Gagal memperbarui catatan ke server.");
+      } finally {
+        showLoading(false);
       }
     }
- 
-    // ROUTING OPERASI OTOMATIS MOBILE (Tetap ke Sheet ABSENSI)
-    const sheetAbsen = ss.getSheetByName("ABSENSI");
-    if (!sheetAbsen) return jsonOutput({ result: "error", message: "Sheet ABSENSI tidak ditemukan" });
-    
-    const nama = String(data.nama || "").trim();
-    const nip = String(data.nip || "").trim();
-    const jenis = String(data.jenis || "WFO").trim().toUpperCase();
-    const status = String(data.status || "").trim().toUpperCase();
-    const jam = normalizeJam(data.jam);
-    const foto = String(data.foto || "").trim();
-    const jabatan = String(data.jabatan || "").trim();
-    const atasan = String(data.atasan || "").trim();
-    const uraianTugas = String(data.uraian_tugas || "").trim();
-    const output = String(data.output || "").trim();
-    const alamat = String(data.alamat || "").trim();
- 
-    if (!nama || !nip || !status || !jam || !foto) {
-      return jsonOutput({ result: "error", message: "Parameter data wajib tidak lengkap" });
-    }
- 
-    const now = new Date();
-    const tanggalHariIniText = Utilities.formatDate(now, TZ, "yyyy-MM-dd");
-    const tanggalFile = Utilities.formatDate(now, TZ, "yyMMdd");
-    const tanggalDisplay = Utilities.formatDate(now, TZ, "dd/MM/yy");
- 
-    const allData = sheetAbsen.getDataRange().getValues();
-    let rowIndex = 0;
-    let rowExisting = null;
- 
-    for (let i = 1; i < allData.length; i++) {
-      const row = allData[i];
-      if (!row[0] || String(row[1]).trim() !== nip) continue;
-      if (normalizeTanggalKey(row[0]) === tanggalHariIniText) {
-        rowIndex = i + 1;
-        rowExisting = row;
-        break;
-      }
-    }
- 
-    const fotoInfo = simpanFoto(foto, nama, status, tanggalFile);
-    const fotoUrl = fotoInfo.fotoUrl;
-    const sheetSetting = ss.getSheetByName("SETTING");
- 
-    if (status === "MASUK") {
-      if (rowExisting && rowExisting[4] !== undefined && String(rowExisting[4]).trim() !== "" && rowExisting[4] !== "-") {
-        return jsonOutput({ result: "error", message: "Anda sudah melakukan absen MASUK hari ini!" });
-      }
-      
-      const terlambatMenit = hitungTerlambat(sheetSetting, jam);
-      const jamPulangLama = rowExisting ? normalizeJamFromCell(rowExisting[5]) : "";
-      
-      const targetRow = rowIndex > 0 ? rowIndex : Math.max(sheetAbsen.getLastRow(), 1) + 1;
-      sheetAbsen.getRange(targetRow, 1, 1, 14).setValues([[
-        tanggalDisplay, nip, nama, jenis, jam, jamPulangLama,
-        rowExisting ? rowExisting[6] : "", rowExisting ? rowExisting[7] : "",
-        rowExisting ? rowExisting[8] : "", rowExisting ? rowExisting[9] : "",
-        rowExisting ? rowExisting[10] : alamat, fotoUrl, 
-        rowExisting ? rowExisting[12] : "", terlambatMenit
-      ]]);
-      SpreadsheetApp.flush();
-      return jsonOutput({ result: "success", message: "Absensi masuk berhasil disimpan", foto: fotoUrl, terlambat: terlambatMenit });
-    }
- 
-    if (status === "PULANG") {
-      if (rowExisting && rowExisting[5] !== undefined && String(rowExisting[5]).trim() !== "" && rowExisting[5] !== "-") {
-        return jsonOutput({ result: "error", message: "Anda sudah melakukan absen PULANG hari ini!" });
-      }
- 
-      const jamMasukLama = rowExisting ? normalizeJamFromCell(rowExisting[4]) : "";
-      const targetRow = rowIndex > 0 ? rowIndex : Math.max(sheetAbsen.getLastRow(), 1) + 1;
-      
-      sheetAbsen.getRange(targetRow, 1, 1, 14).setValues([[
-        rowExisting ? rowExisting[0] : tanggalDisplay,
-        nip, nama, jenis, jamMasukLama, jam,
-        jabatan, atasan, uraianTugas, output, alamat,
-        rowExisting ? rowExisting[11] : "", fotoUrl,
-        rowExisting ? Number(rowExisting[13] || 0) : 0
-      ]]);
-      
-      SpreadsheetApp.flush();
-      return jsonOutput({ result: "success", message: "Absensi pulang berhasil disimpan", foto: fotoUrl });
-    }
-    return jsonOutput({ result: "error", message: "Status tidak valid" });
-  } catch (err) {
-    return jsonOutput({ result: "error", message: "doPost error: " + err.toString() });
-  }
-}
- 
-// =====================================================
-// HELPER INTERNAL
-// =====================================================
-function normalizeJam(value) {
-  const s = String(value || "").trim().replace(/\./g, ":");
-  if (!s || !/^\d{1,2}:\d{2}$/.test(s)) return "";
-  const parts = s.split(":");
-  const h = Number(parts[0]), m = Number(parts[1]);
-  if (isNaN(h) || isNaN(m) || h < 0 || h > 23 || m < 0 || m > 59) return "";
-  return String(h).padStart(2, "0") + ":" + String(m).padStart(2, "0");
-}
-function normalizeJamFromCell(value) {
-  if (value instanceof Date) return Utilities.formatDate(value, TZ, "HH:mm");
-  return normalizeJam(value);
-}
-function normalizeTanggalKey(value) {
-  if (!value) return "";
-  if (value instanceof Date) return Utilities.formatDate(value, TZ, "yyyy-MM-dd");
-  
-  const s = String(value).trim();
-  const shortMatch = s.match(/^(\d{2})\/(\d{2})\/(\d{2})$/);
-  if (shortMatch) return "20" + shortMatch[3] + "-" + shortMatch[2] + "-" + shortMatch[1];
-  
-  const longMatch = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-  if (longMatch) return longMatch[3] + "-" + longMatch[2] + "-" + longMatch[1];
-  
-  const isoMatch = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if (isoMatch) return isoMatch[1] + "-" + isoMatch[2] + "-" + isoMatch[3];
-  
-  try { 
-    return Utilities.formatDate(new Date(s), TZ, "yyyy-MM-dd");
-  } catch (e) { 
-    return ""; 
-  }
-}
-function hitungTerlambat(sheetSetting, jamMasuk) {
-  try {
-    const dataSettingRaw = sheetSetting.getDataRange().getValues();
-    let jamMasukResmi = "07:30";
-    for (let i = 1; i < dataSettingRaw.length; i++) {
-      if (String(dataSettingRaw[i][0]).trim() === "jam_masuk") {
-        jamMasukResmi = (dataSettingRaw[i][1] instanceof Date) ? Utilities.formatDate(dataSettingRaw[i][1], TZ, "HH:mm") : normalizeJam(dataSettingRaw[i][1]) || "07:30";
-        break;
-      }
-    }
-    const diff = ((h, m) => h[0]*60 + Number(h[1]) - (m[0]*60 + Number(m[1])))(jamMasuk.split(":"), jamMasukResmi.split(":"));
-    return diff > 0 ? diff : 0;
-  } catch (e) { return 0; }
-}
-function simpanFoto(fotoBase64, nama, status, tanggalFile) {
-  const blob = Utilities.newBlob(Utilities.base64Decode(fotoBase64.split(",")[1]), "image/png", `${tanggalFile}_${nama.replace(/\s+/g, "_")}_${status}.png`);
-  const file = DriveApp.getFolderById(FOLDER_ID).createFile(blob);
-  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-  return { fotoUrl: "https://drive.google.com/uc?export=view&id=" + file.getId() };
-}
-function jsonOutput(obj) {
-  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
-}
+  </script>
+</body>
+</html>
