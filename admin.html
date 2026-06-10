@@ -1,3 +1,8 @@
+Berikut adalah kode lengkap file `admin.html` yang sudah diperbarui.
+
+Saya telah menambahkan logika pada bagian penarikan data kinerja dan ekspor Excel: jika jenis presensi pegawai **bukan** WFO/WFH/WFA (misalkan Cuti Sakit, Cuti Tahunan, CLTN, dll), maka kolom **Uraian Tugas** dan **Output Kerja** otomatis diisi sesuai dengan nama **Jenis Absen** tersebut secara rapi.
+
+```html
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -752,13 +757,26 @@
         const tr = document.createElement("tr");
         const indexHari = ambilIndexHariDariTglStr(item.tanggal);
         const hariText = namaHari[indexHari] || "-";
+        
+        let isiUraian = "";
+        let isiOutput = "";
+        const jenisUpper = (item.jenis || "").trim().toUpperCase();
+
+        // Validasi Jenis Absen selain WFO/WFH/WFA
+        if (!["WFO", "WFH", "WFA"].includes(jenisUpper)) {
+          isiUraian = item.jenis;
+          isiOutput = item.jenis;
+        } else {
+          isiUraian = item.uraian_tugas || item.keterangan || '-';
+          isiOutput = item.output || '-';
+        }
 
         tr.innerHTML = `
           <td class="text-center">${index + 1}</td>
           <td class="text-center" style="font-weight:600; color:var(--admin-dark);">${hariText}</td>
           <td class="text-center" style="font-weight:600; color:var(--admin-dark);">${item.tanggal}</td>
-          <td style="line-height:1.4; white-space:pre-line;">${item.uraian_tugas || item.keterangan || '-'}</td>
-          <td style="line-height:1.4;">${item.output || '-'}</td>
+          <td style="line-height:1.4; white-space:pre-line;">${isiUraian}</td>
+          <td style="line-height:1.4;">${isiOutput}</td>
         `;
         tbody.appendChild(tr);
       });
@@ -789,9 +807,21 @@
       dataKinerjaSekarang.forEach((item, index) => {
         const indexHari = ambilIndexHariDariTglStr(item.tanggal);
         const hariText = namaHari[indexHari] || "-";
-        const isiUraian = item.uraian_tugas || item.keterangan || '-';
         
-        excelTemplate += `<tr><td class="text-center">${index + 1}</td><td class="text-center">${hariText}</td><td class="text-center">${item.tanggal}</td><td>${isiUraian}</td><td>${item.output || '-'}</td></tr>`;
+        let isiUraian = "";
+        let isiOutput = "";
+        const jenisUpper = (item.jenis || "").trim().toUpperCase();
+
+        // Validasi Ekspor Excel Jenis Absen selain WFO/WFH/WFA
+        if (!["WFO", "WFH", "WFA"].includes(jenisUpper)) {
+          isiUraian = item.jenis;
+          isiOutput = item.jenis;
+        } else {
+          isiUraian = item.uraian_tugas || item.keterangan || '-';
+          isiOutput = item.output || '-';
+        }
+        
+        excelTemplate += `<tr><td class="text-center">${index + 1}</td><td class="text-center">${hariText}</td><td class="text-center">${item.tanggal}</td><td>${isiUraian}</td><td>${isiOutput}</td></tr>`;
       });
 
       excelTemplate += `</tbody></table></body></html>`;
@@ -891,3 +921,5 @@
   </script>
 </body>
 </html>
+
+```
