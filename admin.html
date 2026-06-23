@@ -16,6 +16,7 @@
       --warning: #dd6b20;
       --purple: #6b46c1;
       --orange-dark: #c05621;
+      --teal: #319795;
     }
  
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -39,11 +40,12 @@
  
     .nav-menu { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
     .nav-item { 
-      flex: 1; min-width: 160px; padding: 14px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2); 
+      flex: 1; min-width: 150px; padding: 14px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2); 
       border-radius: 12px; text-align: center; font-weight: bold; cursor: pointer; transition: all 0.2s; 
       font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 6px;
     }
     .nav-item.active { background: #fff; color: var(--admin-color); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+    .nav-item.active.tab-teal-mode { color: var(--teal); }
  
     .card { background: #ffffff; color: var(--text-dark); padding: 20px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); margin-bottom: 20px; }
     h3 { color: var(--admin-color); margin-bottom: 15px; text-transform: uppercase; border-bottom: 2px solid #edf2f7; padding-bottom: 8px; font-size: 16px; letter-spacing: 0.5px; }
@@ -173,13 +175,14 @@
  
       <div class="nav-menu">
         <div class="nav-item active" id="tab-laporan" onclick="switchAdminTab('laporan')">📊 Dashboard Laporan</div>
+        <div class="nav-item" id="tab-laporan2026" onclick="switchAdminTab('laporan2026')">🗄️ Laporan 2026</div>
         <div class="nav-item" id="tab-kinerja" onclick="switchAdminTab('kinerja')">📈 Laporan Kinerja</div>
         <div class="nav-item" id="tab-keterlambatan" onclick="switchAdminTab('keterlambatan')">⏱️ Rekap Keterlambatan</div>
         <div class="nav-item" id="tab-input" onclick="switchAdminTab('input')">✍️ Input Manual</div>
       </div>
  
       <div class="card view-panel" id="panel-laporan" style="display: block;">
-       <h3>Saringan Data Rekapitulasi</h3>
+       <h3 id="txtHeaderLaporan">Saringan Data Rekapitulasi</h3>
         
         <div class="filter-group" style="margin-bottom: 10px;">
           <div>
@@ -213,15 +216,15 @@
           </div>
         </div>
  
-        <button onclick="tarikLaporanAdmin()">PROSES DATA REKAP</button>
+        <button id="btnProsesLaporan" onclick="tarikLaporanAdmin()">PROSES DATA REKAP</button>
  
         <div style="text-align: right;">
-          <button class="btn-excel" onclick="exportKeExcelLaporan()"> Excel &nbsp;📥 EXPORT TO EXCEL</button>
+          <button class="btn-excel" id="btnExportLaporan" onclick="exportKeExcelLaporan()"> Excel &nbsp;📥 EXPORT TO EXCEL</button>
         </div>
  
         <div class="table-responsive">
           <table class="table-laporan-admin">
-           <thead>
+           <thead id="headLaporanAdmin">
               <tr>
                 <th>Tanggal</th>
                 <th>NIP</th>
@@ -395,6 +398,9 @@
     let databaseMentahAbsen = []; 
     let rekapKeterlambatanProcessed = [];
     
+    // Status penanda mode tab aktif ('laporan' = Utama, 'laporan2026' = BACKUP_ABSENSI)
+    let modeLaporanAktif = "laporan"; 
+    
     let jamKerjaSetting = { masukSeninKamis: "07:30", pulangSeninKamis: "16:00", masukJumat: "07:30", pulangJumat: "16:30" };
  
     function showLoading(show) { document.getElementById('loading').style.display = show ? 'flex' : 'none'; }
@@ -446,22 +452,50 @@
       document.getElementById('panel-input').style.display = 'none';
       
       document.getElementById('tab-laporan').classList.remove('active');
+      document.getElementById('tab-laporan2026').classList.remove('active');
       document.getElementById('tab-kinerja').classList.remove('active');
       document.getElementById('tab-keterlambatan').classList.remove('active');
       document.getElementById('tab-input').classList.remove('active');
       
-      if (target === 'laporan') {
-       document.getElementById('panel-laporan').style.display = 'block';
-       document.getElementById('tab-laporan').classList.add('active');
+      // Reset kustomisasi warna/teks panel laporan
+      const headerTitle = document.getElementById("txtHeaderLaporan");
+      const btnProses = document.getElementById("btnProsesLaporan");
+      const thElements = document.querySelectorAll("#headLaporanAdmin th");
+      
+      headerTitle.style.color = "var(--admin-color)";
+      btnProses.style.backgroundColor = "var(--admin-color)";
+      thElements.forEach(th => th.style.backgroundColor = "var(--admin-color)");
+      
+      if (target === 'laporan' || target === 'laporan2026') {
+        modeLaporanAktif = target;
+        document.getElementById('panel-laporan').style.display = 'block';
+        
+        if (target === 'laporan') {
+          document.getElementById('tab-laporan').classList.add('active');
+          headerTitle.innerText = "Saringan Data Rekapitulasi (Utama)";
+        } else {
+          document.getElementById('tab-laporan2026').classList.add('active');
+          document.getElementById('tab-laporan2026').classList.add('tab-teal-mode');
+          
+          // Ubah aksen warna menjadi Teal khusus untuk Laporan 2026 agar mudah membedakan sheet
+          headerTitle.innerText = "Saringan Data Rekapitulasi (LAPORAN 2026 - BACKUP)";
+          headerTitle.style.color = "var(--teal)";
+          btnProses.style.backgroundColor = "var(--teal)";
+          thElements.forEach(th => th.style.backgroundColor = "var(--teal)");
+        }
+        
+        // Tarik ulang otomatis sesuai data kontainer yang dipilih
+        tarikLaporanAdmin();
+        
       } else if (target === 'kinerja') {
-       document.getElementById('panel-kinerja').style.display = 'block';
-       document.getElementById('tab-kinerja').classList.add('active');
+        document.getElementById('panel-kinerja').style.display = 'block';
+        document.getElementById('tab-kinerja').classList.add('active');
       } else if (target === 'keterlambatan') {
-       document.getElementById('panel-keterlambatan').style.display = 'block';
-       document.getElementById('tab-keterlambatan').classList.add('active');
+        document.getElementById('panel-keterlambatan').style.display = 'block';
+        document.getElementById('tab-keterlambatan').classList.add('active');
       } else {
-       document.getElementById('panel-input').style.display = 'block';
-       document.getElementById('tab-input').classList.add('active');
+        document.getElementById('panel-input').style.display = 'block';
+        document.getElementById('tab-input').classList.add('active');
       }
     }
  
@@ -543,8 +577,11 @@
       dataLaporanSekarang = [];
  
       try {
-        const res = await fetch(`${API}?mode=admin_laporan&type=${type}`);
+        // PERUBAHAN LOGIKA PARAMETER: Jika modeLaporanAktif bernilai 'laporan2026', parameter mode diubah menjadi 'admin_laporan_2026'
+        const reqMode = (modeLaporanAktif === "laporan2026") ? "admin_laporan_2026" : "admin_laporan";
+        const res = await fetch(`${API}?mode=${reqMode}&type=${type}`);
         const data = await res.json();
+        
         if(data.result === "success") {
           tbody.innerHTML = "";
           databaseMentahAbsen = data.data; 
@@ -589,7 +626,6 @@
             const tagFotoMasuk = urlMasukValid ? `<img src="${urlMasukValid}" class="img-preview-table" onclick="event.stopPropagation(); bukaPopUpFoto('${urlMasukValid}', '${item.nama.replace(/'/g, "\\'")}', 'FOTO MASUK')">` : "-";
             const tagFotoPulang = urlPulangValid ? `<img src="${urlPulangValid}" class="img-preview-table" onclick="event.stopPropagation(); bukaPopUpFoto('${urlPulangValid}', '${item.nama.replace(/'/g, "\\'")}', 'FOTO PULANG')">` : "-";
             
-            // --- LOGIKA PERBAIKAN PENENTUAN STATUS KETERANGAN ---
             let txtMasuk = "Tepat Waktu", warnaMasuk = "var(--success)"; 
             let txtPulang = "Belum Absen", warnaPulang = "inherit";
             const jenisUpper = (item.jenis || "").trim().toUpperCase();
@@ -600,7 +636,6 @@
             } else {
               const jamPulangResmi = (ambilIndexHariDariTglStr(item.tanggal) === 5) ? jamKerjaSetting.pulangJumat : jamKerjaSetting.pulangSeninKamis;
               
-              // 1. Validasi Jam Masuk Kosong / Strip
               if (!item.jamMasuk || item.jamMasuk === "-") {
                 txtMasuk = "Tidak Absen Masuk";
                 warnaMasuk = "var(--danger)";
@@ -613,7 +648,6 @@
                 }
               }
               
-              // 2. Validasi Jam Pulang
               if (item.jamPulang && item.jamPulang !== "-") {
                 if (hitungMenitSelisih(jamPulangResmi, item.jamPulang) >= 0) { 
                   txtPulang = "Tepat Waktu"; warnaPulang = "var(--success)"; 
@@ -630,10 +664,13 @@
             else if(["CUTI SAKIT","CUTI TAHUNAN","CUTI BESAR","CUTI MELAHIRKAN","CUTI ALASAN PENTING","CLTN"].includes(jenisUpper)) bgBadge = "#e9d8fd; color: #44337a;";
             else bgBadge = "#fed7d7; color: #742a2a;"; 
  
-            const aksiTombol = item.isManual ? `
+            // Apabila sedang membuka arsip Laporan 2026, fitur manipulasi CRUD dikunci (Read-Only) demi keamanan database
+            const aksiTombol = (modeLaporanAktif === "laporan2026") ? 
+              `<span style="color:var(--teal); font-size:11px; font-weight:bold;">🗄️ Arsip 2026</span>` :
+              (item.isManual ? `
                 <button class="btn-action btn-edit" onclick="event.stopPropagation(); pemicuEditLaporan('${item.rowId}')">✏️</button>
                 <button class="btn-action btn-delete" onclick="event.stopPropagation(); pemicuHapusLaporan('${item.rowId}')">❌</button>
-            ` : `<span style="color:#cbd5e0; font-size:11px;">🔒 Mobile-Absen</span>`;
+              ` : `<span style="color:#cbd5e0; font-size:11px;">🔒 Mobile-Absen</span>`);
  
             let cetakCatatan = "";
             if (["WFO", "WFH", "WFA"].includes(jenisUpper)) {
@@ -939,7 +976,11 @@
  
     function exportKeExcelLaporan() {
       if (dataLaporanSekarang.length === 0) { alert("Tidak ada data laporan aktif!"); return; }
-      let excelTemplate = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="UTF-8"><style>body { font-family: sans-serif; } .judul { font-size: 16px; font-weight: bold; text-align: center; color: #1a365d; } th { background-color: #2b6cb0; color: white; font-weight: bold; border: 1px solid #cbd5e0; padding: 8px; } td { border: 1px solid #e2e8f0; padding: 6px; } .text-center { text-align: center; } .merah { color: red; font-weight: bold; } .hijau { color: green; font-weight: bold; } .oranye { color: orange; font-weight: bold; }</style></head><body><table><tr><td colspan="10" class="judul">LAPORAN REKAPITULASI PRESENSI PEGAWAI KPU KOTA MALANG</td></tr><tr><td colspan="10"></td></tr><thead><tr><th>Tanggal</th><th>NIP Pegawai</th><th>Nama Lengkap Pegawai</th><th>Status Kehadiran</th><th>Jam Masuk</th><th>Jam Pulang</th><th>Keterangan Masuk</th><th>Keterangan Pulang</th><th>Link Foto Masuk</th><th>Link Foto Pulang</th></tr></thead><tbody>`;
+      
+      const sheetTitle = (modeLaporanAktif === "laporan2026") ? "LAPORAN ARSIP PRESENSI 2026 (BACKUP)" : "LAPORAN REKAPITULASI PRESENSI UTAMA";
+      const filePrefix = (modeLaporanAktif === "laporan2026") ? "REKAP_PRESENSI_2026_BACKUP" : "REKAP_PRESENSI_UTAMA";
+      
+      let excelTemplate = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="UTF-8"><style>body { font-family: sans-serif; } .judul { font-size: 16px; font-weight: bold; text-align: center; color: #1a365d; } th { background-color: #2b6cb0; color: white; font-weight: bold; border: 1px solid #cbd5e0; padding: 8px; } td { border: 1px solid #e2e8f0; padding: 6px; } .text-center { text-align: center; } .merah { color: red; font-weight: bold; } .hijau { color: green; font-weight: bold; } .oranye { color: orange; font-weight: bold; }</style></head><body><table><tr><td colspan="10" class="judul">${sheetTitle} PEGAWAI KPU KOTA MALANG</td></tr><tr><td colspan="10"></td></tr><thead><tr><th>Tanggal</th><th>NIP Pegawai</th><th>Nama Lengkap Pegawai</th><th>Status Kehadiran</th><th>Jam Masuk</th><th>Jam Pulang</th><th>Keterangan Masuk</th><th>Keterangan Pulang</th><th>Link Foto Masuk</th><th>Link Foto Pulang</th></tr></thead><tbody>`;
  
       dataLaporanSekarang.forEach(item => {
         let clsM = '', clsP = '';
@@ -956,7 +997,7 @@
       const blob = new Blob([excelTemplate], { type: "application/vnd.ms-excel;charset=utf-8;" });
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
-      link.setAttribute("download", `REKAP_PRESENSI_${document.getElementById("filterType").value.toUpperCase()}_${new Date().toISOString().slice(0,10)}.xls`);
+      link.setAttribute("download", `${filePrefix}_${document.getElementById("filterType").value.toUpperCase()}_${new Date().toISOString().slice(0,10)}.xls`);
       document.body.appendChild(link); link.click(); document.body.removeChild(link);
     }
  
