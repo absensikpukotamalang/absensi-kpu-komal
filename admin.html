@@ -629,7 +629,37 @@
             return; 
           }
           
-          dataDisaring.sort((a, b) => a.tanggal.split('/').reverse().join('').localeCompare(b.tanggal.split('/').reverse().join('')) || a.nama.localeCompare(b.nama));
+          // ================= PERBAIKAN SORTING LOGIC =================
+          // Mengurutkan secara akurat berdasarkan Tanggal (Tertua -> Terbaru), lalu berdasarkan Nama (A -> Z)
+          dataDisaring.sort((a, b) => {
+            let dateA = "";
+            if (a.tanggal.includes("/")) {
+              const p = a.tanggal.split("/");
+              dateA = `${p[2].length === 2 ? "20" + p[2] : p[2]}-${p[1].padStart(2, '0')}-${p[0].padStart(2, '0')}`;
+            } else {
+              dateA = a.tanggal;
+            }
+
+            let dateB = "";
+            if (b.tanggal.includes("/")) {
+              const p = b.tanggal.split("/");
+              dateB = `${p[2].length === 2 ? "20" + p[2] : p[2]}-${p[1].padStart(2, '0')}-${p[0].padStart(2, '0')}`;
+            } else {
+              dateB = b.tanggal;
+            }
+
+            // Jika tanggal berbeda, urutkan berdasarkan tanggal
+            if (dateA !== dateB) {
+              return dateA.localeCompare(dateB);
+            }
+            
+            // Jika tanggal sama, urutkan berdasarkan alfabet nama
+            let namaA = (a.nama || "").toLowerCase();
+            let namaB = (b.nama || "").toLowerCase();
+            return namaA.localeCompare(namaB);
+          });
+          // ===========================================================
+          
           dataLaporanSekarang = dataDisaring;
  
           dataDisaring.forEach(item => {
@@ -948,7 +978,7 @@
       document.body.appendChild(link); link.click(); document.body.removeChild(link);
     }
  
-async function prosesRekapKeterlambatan() {
+    async function prosesRekapKeterlambatan() {
       const tglAwal = document.getElementById("delayTglAwal").value;
       const tglAkhir = document.getElementById("delayTglAkhir").value;
       const tbody = document.getElementById("bodyRekapKeterlambatan");
@@ -962,22 +992,19 @@ async function prosesRekapKeterlambatan() {
       tbody.innerHTML = '<tr><td colspan="4" class="text-center">Sedang mengambil dan mengolah data langsung dari BACKUP_ABSENSI...</td></tr>';
       
       try {
-        // Langsung mengambil data mentah dari BACKUP_ABSENSI tanpa perantara cache
         const res = await fetch(`${API}?mode=admin_laporan_2026&type=custom`);
         const data = await res.json();
         
         if (data.result === "success") {
           tbody.innerHTML = "";
-          let mapDelay = {}; // Wadah untuk grouping [NIP] -> {nip, nama, frekuensi, totalMenit}
+          let mapDelay = {};
  
           data.data.forEach(item => {
-            // 1. FILTER STATUS: Hanya proses jika jenis presensinya WFO, WFH, atau WFA
             const jenisUpper = (item.jenis || "").trim().toUpperCase();
             if (!["WFO", "WFH", "WFA"].includes(jenisUpper)) {
-              return; // Abaikan baris ini jika statusnya selain WFO, WFH, WFA
+              return; 
             }
 
-            // Standardisasi format tanggal (ubah dd/mm/yy menjadi yyyy-mm-dd)
             let dStr = "";
             if (item.tanggal && item.tanggal.includes("/")) {
               const p = item.tanggal.split("/");
@@ -986,20 +1013,16 @@ async function prosesRekapKeterlambatan() {
               dStr = item.tanggal || "";
             }
  
-            // Filter berdasarkan rentang tanggal yang dipilih user
             if (dStr >= tglAwal && dStr <= tglAkhir) {
-              // Ambil menit keterlambatan dari kolom keterangan
               let menit = 0;
               if (item.keterangan && !isNaN(item.keterangan) && item.keterangan !== "-" && item.keterangan !== "") {
                 menit = parseInt(item.keterangan);
               }
  
-              // Hanya proses jika pegawai tersebut terlambat (menit > 0)
               if (menit > 0) {
                 const nipPegawai = item.nip;
                 const namaPegawai = item.nama || "Tanpa Nama";
                 
-                // Jika NIP belum terdaftar di mapDelay, buat object baru
                 if (!mapDelay[nipPegawai]) {
                   mapDelay[nipPegawai] = { 
                     nip: nipPegawai, 
@@ -1009,20 +1032,17 @@ async function prosesRekapKeterlambatan() {
                   };
                 }
                 
-                // Akumulasikan frekuensi dan total menit keterlambatan
                 mapDelay[nipPegawai].frekuensi += 1; 
                 mapDelay[nipPegawai].totalMenit += menit;
               }
             }
           });
  
-          // Ubah object mapping menjadi array agar bisa dimasukkan ke tabel
           rekapKeterlambatanProcessed = Object.values(mapDelay);
           
           if (rekapKeterlambatanProcessed.length === 0) {
             tbody.innerHTML = '<tr><td colspan="4" class="text-center">Tidak ada data keterlambatan pada rentang tanggal tersebut.</td></tr>';
           } else {
-            // Urutkan dan tampilkan ke tabel
             urutkanTabelKeterlambatan();
           }
           
