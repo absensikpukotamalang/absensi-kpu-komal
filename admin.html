@@ -953,53 +953,79 @@ async function prosesRekapKeterlambatan() {
       const tglAkhir = document.getElementById("delayTglAkhir").value;
       const tbody = document.getElementById("bodyRekapKeterlambatan");
  
-      if (!tglAwal || !tglAkhir) { alert("Rentang tanggal wajib diisi!"); return; }
+      if (!tglAwal || !tglAkhir) { 
+        alert("Rentang tanggal wajib diisi!"); 
+        return; 
+      }
       
       showLoading(true);
-      tbody.innerHTML = '<tr><td colspan="4" class="text-center">Menarik data dari BACKUP_ABSENSI... Mohon tunggu...</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="4" class="text-center">Sedang mengambil dan mengolah data langsung dari BACKUP_ABSENSI...</td></tr>';
       
       try {
-        // Langsung tembak ke backend dengan mode laporan 2026 (BACKUP_ABSENSI)
-        // type=custom digunakan agar server memproses rentang tanggal
+        // Langsung mengambil data mentah dari BACKUP_ABSENSI tanpa perantara cache
         const res = await fetch(`${API}?mode=admin_laporan_2026&type=custom`);
         const data = await res.json();
         
         if (data.result === "success") {
           tbody.innerHTML = "";
-          
-          let mapDelay = {};
-          daftarPegawaiCache.forEach(p => { 
-            mapDelay[p.nip] = { nip: p.nip, nama: p.nama, frekuensi: 0, totalMenit: 0 }; 
-          });
+          let mapDelay = {}; // Wadah untuk grouping [NIP] -> {nip, nama, frekuensi, totalMenit}
  
-          // Olah data kiriman langsung berdasarkan filter tanggal yang dipilih
           data.data.forEach(item => {
+            // Standardisasi format tanggal (ubah dd/mm/yy menjadi yyyy-mm-dd)
             let dStr = "";
-            if (item.tanggal.includes("/")) {
+            if (item.tanggal && item.tanggal.includes("/")) {
               const p = item.tanggal.split("/");
-              dStr = `${p[2].length===2?"20"+p[2]:p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
+              dStr = `${p[2].length === 2 ? "20" + p[2] : p[2]}-${p[1].padStart(2, '0')}-${p[0].padStart(2, '0')}`;
             } else {
-              dStr = item.tanggal;
+              dStr = item.tanggal || "";
             }
  
+            // Filter berdasarkan rentang tanggal yang dipilih user
             if (dStr >= tglAwal && dStr <= tglAkhir) {
-              let menit = (!isNaN(item.keterangan) && item.keterangan !== "-" && item.keterangan !== "") ? parseInt(item.keterangan) : 0;
+              // Ambil menit keterlambatan dari kolom keterangan
+              let menit = 0;
+              if (item.keterangan && !isNaN(item.keterangan) && item.keterangan !== "-" && item.keterangan !== "") {
+                menit = parseInt(item.keterangan);
+              }
+ 
+              // Hanya proses jika pegawai tersebut terlambat (menit > 0)
               if (menit > 0) {
-                if (!mapDelay[item.nip]) mapDelay[item.nip] = { nip: item.nip, nama: item.nama || "Unknown", frekuensi: 0, totalMenit: 0 };
-                mapDelay[item.nip].frekuensi += 1; 
-                mapDelay[item.nip].totalMenit += menit;
+                const nipPegawai = item.nip;
+                const namaPegawai = item.nama || "Tanpa Nama";
+                
+                // Jika NIP belum terdaftar di mapDelay, buat object baru
+                if (!mapDelay[nipPegawai]) {
+                  mapDelay[nipPegawai] = { 
+                    nip: nipPegawai, 
+                    nama: namaPegawai, 
+                    frekuensi: 0, 
+                    totalMenit: 0 
+                  };
+                }
+                
+                // Akumulasikan frekuensi dan total menit keterlambatan
+                mapDelay[nipPegawai].frekuensi += 1; 
+                mapDelay[nipPegawai].totalMenit += menit;
               }
             }
           });
  
+          // Ubah object mapping menjadi array agar bisa dimasukkan ke tabel
           rekapKeterlambatanProcessed = Object.values(mapDelay);
-          urutkanTabelKeterlambatan();
+          
+          if (rekapKeterlambatanProcessed.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center">Tidak ada data keterlambatan pada rentang tanggal tersebut.</td></tr>';
+          } else {
+            // Urutkan dan tampilkan ke tabel
+            urutkanTabelKeterlambatan();
+          }
+          
         } else {
           tbody.innerHTML = `<tr><td colspan="4" class="text-center" style="color:var(--danger);">${data.message}</td></tr>`;
         }
       } catch (e) {
         console.error(e);
-        tbody.innerHTML = '<tr><td colspan="4" class="text-center" style="color:var(--danger);">Gagal mengambil data dari server. Sinchronisasi gagal.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center" style="color:var(--danger);">Gagal menyambung ke server Google Sheets.</td></tr>';
       } finally {
         showLoading(false);
       }
