@@ -948,46 +948,61 @@
       document.body.appendChild(link); link.click(); document.body.removeChild(link);
     }
  
-function prosesRekapKeterlambatan() {
+async function prosesRekapKeterlambatan() {
       const tglAwal = document.getElementById("delayTglAwal").value;
       const tglAkhir = document.getElementById("delayTglAkhir").value;
       const tbody = document.getElementById("bodyRekapKeterlambatan");
  
       if (!tglAwal || !tglAkhir) { alert("Rentang tanggal wajib diisi!"); return; }
-      if (databaseMentahAbsen.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" class="text-center">Database kosong. Lakukan penarikan di Dashboard Laporan atau Laporan 2026 dahulu.</td></tr>';
-        return;
-      }
- 
-      let mapDelay = {};
-      daftarPegawaiCache.forEach(p => { mapDelay[p.nip] = { nip: p.nip, nama: p.nama, frekuensi: 0, totalMenit: 0 }; });
- 
-      databaseMentahAbsen.forEach(item => {
-        let dStr = "";
-        if (item.tanggal.includes("/")) {
-          const p = item.tanggal.split("/");
-          dStr = `${p[2].length===2?"20"+p[2]:p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
-        } else {
-          dStr = item.tanggal;
-        }
- 
-        if (dStr >= tglAwal && dStr <= tglAkhir) {
-          // Mengambil durasi keterlambatan dari kolom 'keterangan'
-          let menit = 0;
-          if (!isNaN(item.keterangan) && item.keterangan !== "-" && item.keterangan !== "") {
-            menit = parseInt(item.keterangan);
-          } 
+      
+      showLoading(true);
+      tbody.innerHTML = '<tr><td colspan="4" class="text-center">Menarik data dari BACKUP_ABSENSI... Mohon tunggu...</td></tr>';
+      
+      try {
+        // Langsung tembak ke backend dengan mode laporan 2026 (BACKUP_ABSENSI)
+        // type=custom digunakan agar server memproses rentang tanggal
+        const res = await fetch(`${API}?mode=admin_laporan_2026&type=custom`);
+        const data = await res.json();
+        
+        if (data.result === "success") {
+          tbody.innerHTML = "";
           
-          if (menit > 0) {
-            if (!mapDelay[item.nip]) mapDelay[item.nip] = { nip: item.nip, nama: item.nama || "Unknown", frekuensi: 0, totalMenit: 0 };
-            mapDelay[item.nip].frekuensi += 1; 
-            mapDelay[item.nip].totalMenit += menit;
-          }
-        }
-      });
+          let mapDelay = {};
+          daftarPegawaiCache.forEach(p => { 
+            mapDelay[p.nip] = { nip: p.nip, nama: p.nama, frekuensi: 0, totalMenit: 0 }; 
+          });
  
-      rekapKeterlambatanProcessed = Object.values(mapDelay);
-      urutkanTabelKeterlambatan();
+          // Olah data kiriman langsung berdasarkan filter tanggal yang dipilih
+          data.data.forEach(item => {
+            let dStr = "";
+            if (item.tanggal.includes("/")) {
+              const p = item.tanggal.split("/");
+              dStr = `${p[2].length===2?"20"+p[2]:p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
+            } else {
+              dStr = item.tanggal;
+            }
+ 
+            if (dStr >= tglAwal && dStr <= tglAkhir) {
+              let menit = (!isNaN(item.keterangan) && item.keterangan !== "-" && item.keterangan !== "") ? parseInt(item.keterangan) : 0;
+              if (menit > 0) {
+                if (!mapDelay[item.nip]) mapDelay[item.nip] = { nip: item.nip, nama: item.nama || "Unknown", frekuensi: 0, totalMenit: 0 };
+                mapDelay[item.nip].frekuensi += 1; 
+                mapDelay[item.nip].totalMenit += menit;
+              }
+            }
+          });
+ 
+          rekapKeterlambatanProcessed = Object.values(mapDelay);
+          urutkanTabelKeterlambatan();
+        } else {
+          tbody.innerHTML = `<tr><td colspan="4" class="text-center" style="color:var(--danger);">${data.message}</td></tr>`;
+        }
+      } catch (e) {
+        console.error(e);
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center" style="color:var(--danger);">Gagal mengambil data dari server. Sinchronisasi gagal.</td></tr>';
+      } finally {
+        showLoading(false);
+      }
     }
  
     function urutkanTabelKeterlambatan() {
