@@ -948,14 +948,14 @@
       document.body.appendChild(link); link.click(); document.body.removeChild(link);
     }
  
-    function prosesRekapKeterlambatan() {
+function prosesRekapKeterlambatan() {
       const tglAwal = document.getElementById("delayTglAwal").value;
       const tglAkhir = document.getElementById("delayTglAkhir").value;
       const tbody = document.getElementById("bodyRekapKeterlambatan");
  
       if (!tglAwal || !tglAkhir) { alert("Rentang tanggal wajib diisi!"); return; }
       if (databaseMentahAbsen.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" class="text-center">Database kosong. Lakukan penarikan di Dashboard Laporan dahulu.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center">Database kosong. Lakukan penarikan di Dashboard Laporan atau Laporan 2026 dahulu.</td></tr>';
         return;
       }
  
@@ -972,10 +972,16 @@
         }
  
         if (dStr >= tglAwal && dStr <= tglAkhir) {
-          let menit = (!isNaN(item.keterangan) && item.keterangan !== "-" && item.keterangan !== "") ? parseInt(item.keterangan) : 0;
+          // Mengambil durasi keterlambatan dari kolom 'keterangan'
+          let menit = 0;
+          if (!isNaN(item.keterangan) && item.keterangan !== "-" && item.keterangan !== "") {
+            menit = parseInt(item.keterangan);
+          } 
+          
           if (menit > 0) {
             if (!mapDelay[item.nip]) mapDelay[item.nip] = { nip: item.nip, nama: item.nama || "Unknown", frekuensi: 0, totalMenit: 0 };
-            mapDelay[item.nip].frekuensi += 1; mapDelay[item.nip].totalMenit += menit;
+            mapDelay[item.nip].frekuensi += 1; 
+            mapDelay[item.nip].totalMenit += menit;
           }
         }
       });
