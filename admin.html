@@ -971,6 +971,12 @@ async function prosesRekapKeterlambatan() {
           let mapDelay = {}; // Wadah untuk grouping [NIP] -> {nip, nama, frekuensi, totalMenit}
  
           data.data.forEach(item => {
+            // 1. FILTER STATUS: Hanya proses jika jenis presensinya WFO, WFH, atau WFA
+            const jenisUpper = (item.jenis || "").trim().toUpperCase();
+            if (!["WFO", "WFH", "WFA"].includes(jenisUpper)) {
+              return; // Abaikan baris ini jika statusnya selain WFO, WFH, WFA
+            }
+
             // Standardisasi format tanggal (ubah dd/mm/yy menjadi yyyy-mm-dd)
             let dStr = "";
             if (item.tanggal && item.tanggal.includes("/")) {
