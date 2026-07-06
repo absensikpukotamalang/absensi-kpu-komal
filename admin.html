@@ -354,6 +354,9 @@
           <option value="CUTI MELAHIRKAN">CUTI MELAHIRKAN</option>
           <option value="CUTI ALASAN PENTING">CUTI ALASAN PENTING</option>
           <option value="CLTN">CLTN (Cuti Di Luar Tanggungan Negara)</option>
+          <option value="IJIN SAKIT">IJIN SAKIT</option>
+          <option value="IJIN THDK">IJIN THDK (Tidak Hadir Tanpa Keterangan / Ijin Lain)</option>
+          <option value="DL">DL (Dinas Luar)</option>
        </select>
  
         <div id="wrapper-opsional-jam" style="display: none; grid-template-columns: 1fr 1fr; gap: 10px;">
@@ -611,6 +614,7 @@
             let dateB = "";
             if (b.tanggal.includes("/")) {
               const p = b.tanggal.split("/");
+              dateB = `${p[2].length === 2 ? "20" + b.tanggal ? "20" + b.tanggal : b.tanggal : b.tanggal}`;
               dateB = `${p[2].length === 2 ? "20" + p[2] : p[2]}-${p[1].padStart(2, '0')}-${p[0].padStart(2, '0')}`;
             } else {
               dateB = b.tanggal;
@@ -675,7 +679,7 @@
             let bgBadge = "#edf2f7";
             if(jenisUpper === "WFO") bgBadge = "#c6f6d5; color: #22543d;";
             else if(jenisUpper === "WFH") bgBadge = "#feebc8; color: #744210;";
-            else if(["CUTI SAKIT","CUTI TAHUNAN","CUTI BESAR","CUTI MELAHIRKAN","CUTI ALASAN PENTING","CLTN"].includes(jenisUpper)) bgBadge = "#e9d8fd; color: #44337a;";
+            else if(["CUTI SAKIT","CUTI TAHUNAN","CUTI BESAR","CUTI MELAHIRKAN","CUTI ALASAN PENTING","CLTN","IJIN SAKIT","IJIN THDK","DL"].includes(jenisUpper)) bgBadge = "#e9d8fd; color: #44337a;";
             else bgBadge = "#fed7d7; color: #742a2a;"; 
  
             const aksiTombol = (item.isManual ? `
