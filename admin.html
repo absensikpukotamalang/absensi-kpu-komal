@@ -175,7 +175,6 @@
  
       <div class="nav-menu">
         <div class="nav-item active" id="tab-laporan" onclick="switchAdminTab('laporan')">📊 Dashboard Laporan</div>
-        <div class="nav-item" id="tab-laporan2026" onclick="switchAdminTab('laporan2026')">🗄️ Laporan 2026</div>
         <div class="nav-item" id="tab-kinerja" onclick="switchAdminTab('kinerja')">📈 Laporan Kinerja</div>
         <div class="nav-item" id="tab-keterlambatan" onclick="switchAdminTab('keterlambatan')">⏱️ Rekap Keterlambatan</div>
         <div class="nav-item" id="tab-input" onclick="switchAdminTab('input')">✍️ Input Manual</div>
@@ -439,8 +438,6 @@
       document.getElementById('panel-input').style.display = 'none';
       
       document.getElementById('tab-laporan').classList.remove('active');
-      document.getElementById('tab-laporan2026').classList.remove('active');
-      document.getElementById('tab-laporan2026').classList.remove('tab-teal-mode');
       document.getElementById('tab-kinerja').classList.remove('active');
       document.getElementById('tab-keterlambatan').classList.remove('active');
       document.getElementById('tab-input').classList.remove('active');
@@ -452,60 +449,30 @@
       headerTitle.style.color = "var(--admin-color)";
       btnProses.style.backgroundColor = "var(--admin-color)";
       
-      if (target === 'laporan' || target === 'laporan2026') {
+      if (target === 'laporan') {
         modeLaporanAktif = target;
         document.getElementById('panel-laporan').style.display = 'block';
+        document.getElementById('tab-laporan').classList.add('active');
+        headerTitle.innerText = "Saringan Data Rekapitulasi (Utama)";
         
-        if (target === 'laporan') {
-          document.getElementById('tab-laporan').classList.add('active');
-          headerTitle.innerText = "Saringan Data Rekapitulasi (Utama)";
-          
-          // ================= PERBAIKAN HEADER STRUKTUR DASHBOARD UTAMA =================
-          headerRow.innerHTML = `
-            <th>Tanggal</th>
-            <th>NIP</th>
-            <th>Nama Pegawai</th>
-            <th>Status</th>
-            <th>Masuk</th>
-            <th>Pulang</th>
-            <th>Ket. Masuk</th>
-            <th>Ket. Pulang</th>
-            <th>Uraian Tugas / Aktivitas</th>
-            <th>Output Kerja / Berkas</th>
-            <th>Catatan Admin</th>
-            <th class="text-center">F.Masuk</th>
-            <th class="text-center">F.Pulang</th>
-            <th class="text-center" style="width: 130px;">Aksi Pengelola</th>
-          `;
-          const thElements = headerRow.querySelectorAll("th");
-          thElements.forEach(th => th.style.backgroundColor = "var(--admin-color)");
-        } else {
-          document.getElementById('tab-laporan2026').classList.add('active');
-          document.getElementById('tab-laporan2026').classList.add('tab-teal-mode');
-          
-          headerTitle.innerText = "Saringan Data Rekapitulasi (LAPORAN 2026 - BACKUP)";
-          headerTitle.style.color = "var(--teal)";
-          btnProses.style.backgroundColor = "var(--teal)";
-          
-          headerRow.innerHTML = `
-            <th>Tanggal</th>
-            <th>NIP</th>
-            <th>Nama Pegawai</th>
-            <th>Status</th>
-            <th>Masuk</th>
-            <th>Pulang</th>
-            <th>Ket. Masuk</th>
-            <th>Ket. Pulang</th>
-            <th>Uraian Tugas / Aktivitas</th>
-            <th>Output Kerja / Berkas</th>
-            <th>Catatan Admin</th>
-            <th class="text-center">F.Masuk</th>
-            <th class="text-center">F.Pulang</th>
-            <th class="text-center" style="width: 130px;">Aksi Pengelola</th>
-          `;
-          const thElements = headerRow.querySelectorAll("th");
-          thElements.forEach(th => th.style.backgroundColor = "var(--teal)");
-        }
+        headerRow.innerHTML = `
+          <th>Tanggal</th>
+          <th>NIP</th>
+          <th>Nama Pegawai</th>
+          <th>Status</th>
+          <th>Masuk</th>
+          <th>Pulang</th>
+          <th>Ket. Masuk</th>
+          <th>Ket. Pulang</th>
+          <th>Uraian Tugas / Aktivitas</th>
+          <th>Output Kerja / Berkas</th>
+          <th>Catatan Admin</th>
+          <th class="text-center">F.Masuk</th>
+          <th class="text-center">F.Pulang</th>
+          <th class="text-center" style="width: 130px;">Aksi Pengelola</th>
+        `;
+        const thElements = headerRow.querySelectorAll("th");
+        thElements.forEach(th => th.style.backgroundColor = "var(--admin-color)");
         
         tarikLaporanAdmin();
         
@@ -595,13 +562,12 @@
  
       showLoading(true);
       const tbody = document.getElementById("bodyLaporanAdmin");
-      // Dashboard Utama maupun Backup kini sama-sama memiliki 14 kolom
       const targetColspan = 14; 
       tbody.innerHTML = `<tr><td colspan="${targetColspan}" class="text-center">Sinkronisasi data rekap...</td></tr>`;
       dataLaporanSekarang = [];
  
       try {
-        const reqMode = (modeLaporanAktif === "laporan2026") ? "admin_laporan_2026" : "admin_laporan";
+        const reqMode = "admin_laporan";
         const res = await fetch(`${API}?mode=${reqMode}&type=${type}`);
         const data = await res.json();
         
@@ -633,7 +599,6 @@
             return; 
           }
           
-          // ================= PERBAIKAN SORTING LOGIC =================
           dataDisaring.sort((a, b) => {
             let dateA = "";
             if (a.tanggal.includes("/")) {
@@ -659,7 +624,6 @@
             let namaB = (b.nama || "").toLowerCase();
             return namaA.localeCompare(namaB);
           });
-          // ===========================================================
           
           dataLaporanSekarang = dataDisaring;
  
@@ -714,9 +678,7 @@
             else if(["CUTI SAKIT","CUTI TAHUNAN","CUTI BESAR","CUTI MELAHIRKAN","CUTI ALASAN PENTING","CLTN"].includes(jenisUpper)) bgBadge = "#e9d8fd; color: #44337a;";
             else bgBadge = "#fed7d7; color: #742a2a;"; 
  
-            const aksiTombol = (modeLaporanAktif === "laporan2026") ? 
-              `<span style="color:var(--teal); font-size:11px; font-weight:bold;">🗄️ Arsip 2026</span>` :
-              (item.isManual ? `
+            const aksiTombol = (item.isManual ? `
                 <button class="btn-action btn-edit" onclick="event.stopPropagation(); pemicuEditLaporan('${item.rowId}')">✏️</button>
                 <button class="btn-action btn-delete" onclick="event.stopPropagation(); pemicuHapusLaporan('${item.rowId}')">❌</button>
               ` : `<span style="color:#cbd5e0; font-size:11px;">🔒 Mobile-Absen</span>`);
@@ -731,7 +693,6 @@
             let isiUraian = item.uraian_tugas || "-";
             let isiOutput = item.output || "-";
  
-            // ================= RENDER STRUKTUR KOLOM UTAMA & 2026 (KINI SAMA) =================
             tr.innerHTML = `
               <td>${item.tanggal}</td>
               <td>${item.nip}</td>
@@ -974,10 +935,10 @@
       }
       
       showLoading(true);
-      tbody.innerHTML = '<tr><td colspan="4" class="text-center">Sedang mengambil dan mengolah data langsung dari BACKUP_ABSENSI...</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="4" class="text-center">Sedang mengambil dan mengolah data langsung dari ABSENSI...</td></tr>';
       
       try {
-        const res = await fetch(`${API}?mode=admin_laporan_2026&type=custom`);
+        const res = await fetch(`${API}?mode=admin_laporan&type=custom`);
         const data = await res.json();
         
         if (data.result === "success") {
@@ -1075,13 +1036,11 @@
     function exportKeExcelLaporan() {
       if (dataLaporanSekarang.length === 0) { alert("Tidak ada data laporan aktif!"); return; }
       
-      const isLaporan2026 = (modeLaporanAktif === "laporan2026");
-      const sheetTitle = isLaporan2026 ? "LAPORAN ARSIP PRESENSI 2026 (BACKUP)" : "LAPORAN REKAPITULASI PRESENSI UTAMA";
-      const filePrefix = isLaporan2026 ? "REKAP_PRESENSI_2026_BACKUP" : "REKAP_PRESENSI_UTAMA";
+      const sheetTitle = "LAPORAN REKAPITULASI PRESENSI UTAMA";
+      const filePrefix = "REKAP_PRESENSI_UTAMA";
       
       let excelTemplate = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="UTF-8"><style>body { font-family: sans-serif; } .judul { font-size: 16px; font-weight: bold; text-align: center; color: #1a365d; } th { background-color: #2b6cb0; color: white; font-weight: bold; border: 1px solid #cbd5e0; padding: 8px; } td { border: 1px solid #e2e8f0; padding: 6px; } .text-center { text-align: center; } .merah { color: red; font-weight: bold; } .hijau { color: green; font-weight: bold; } .oranye { color: orange; font-weight: bold; }</style></head><body><table><tr>`;
       
-      // ================= PERBAIKAN EXPORT EXCEL (KOLOM DISEDIAKAN UNTUK KEDUA MODE) =================
       excelTemplate += `<td colspan="12" class="judul">${sheetTitle} PEGAWAI KPU KOTA MALANG</td></tr><tr><td colspan="12"></td></tr><thead><tr><th>Tanggal</th><th>NIP Pegawai</th><th>Nama Lengkap Pegawai</th><th>Status Kehadiran</th><th>Jam Masuk</th><th>Jam Pulang</th><th>Keterangan Masuk</th><th>Keterangan Pulang</th><th>Uraian Tugas / Aktivitas</th><th>Output Kerja / Berkas</th><th>Link Foto Masuk</th><th>Link Foto Pulang</th></tr></thead><tbody>`;
  
       dataLaporanSekarang.forEach(item => {
