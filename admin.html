@@ -230,7 +230,7 @@
            </thead>
             <tbody id="bodyLaporanAdmin">
               <tr>
-                <td colspan="12" class="text-center" style="color:#a0aec0; padding:20px;">Data siap ditarik.</td>
+                <td colspan="14" class="text-center" style="color:#a0aec0; padding:20px;">Data siap ditarik.</td>
               </tr>
            </tbody>
           </table>
@@ -460,6 +460,7 @@
           document.getElementById('tab-laporan').classList.add('active');
           headerTitle.innerText = "Saringan Data Rekapitulasi (Utama)";
           
+          // ================= PERBAIKAN HEADER STRUKTUR DASHBOARD UTAMA =================
           headerRow.innerHTML = `
             <th>Tanggal</th>
             <th>NIP</th>
@@ -469,6 +470,8 @@
             <th>Pulang</th>
             <th>Ket. Masuk</th>
             <th>Ket. Pulang</th>
+            <th>Uraian Tugas / Aktivitas</th>
+            <th>Output Kerja / Berkas</th>
             <th>Catatan Admin</th>
             <th class="text-center">F.Masuk</th>
             <th class="text-center">F.Pulang</th>
@@ -592,7 +595,8 @@
  
       showLoading(true);
       const tbody = document.getElementById("bodyLaporanAdmin");
-      const targetColspan = (modeLaporanAktif === "laporan2026") ? 14 : 12;
+      // Dashboard Utama maupun Backup kini sama-sama memiliki 14 kolom
+      const targetColspan = 14; 
       tbody.innerHTML = `<tr><td colspan="${targetColspan}" class="text-center">Sinkronisasi data rekap...</td></tr>`;
       dataLaporanSekarang = [];
  
@@ -630,7 +634,6 @@
           }
           
           // ================= PERBAIKAN SORTING LOGIC =================
-          // Mengurutkan secara akurat berdasarkan Tanggal (Tertua -> Terbaru), lalu berdasarkan Nama (A -> Z)
           dataDisaring.sort((a, b) => {
             let dateA = "";
             if (a.tanggal.includes("/")) {
@@ -648,12 +651,10 @@
               dateB = b.tanggal;
             }
 
-            // Jika tanggal berbeda, urutkan berdasarkan tanggal
             if (dateA !== dateB) {
               return dateA.localeCompare(dateB);
             }
             
-            // Jika tanggal sama, urutkan berdasarkan alfabet nama
             let namaA = (a.nama || "").toLowerCase();
             let namaB = (b.nama || "").toLowerCase();
             return namaA.localeCompare(namaB);
@@ -730,39 +731,23 @@
             let isiUraian = item.uraian_tugas || "-";
             let isiOutput = item.output || "-";
  
-            if (modeLaporanAktif === "laporan2026") {
-              tr.innerHTML = `
-                <td>${item.tanggal}</td>
-                <td>${item.nip}</td>
-                <td><strong>${item.nama}</strong></td>
-                <td><span class="status-badge" style="background-color:${bgBadge}">${item.jenis}</span></td>
-                <td>${item.jamMasuk || '-'}</td>
-                <td>${item.jamPulang || '-'}</td>
-                <td style="color:${warnaMasuk}; font-weight:600;">${txtMasuk}</td>
-                <td style="color:${warnaPulang}; font-weight:600;">${txtPulang}</td>
-                <td style="line-height:1.3; max-width:200px; white-space:pre-line;">${isiUraian}</td>
-                <td style="line-height:1.3; max-width:150px;">${isiOutput}</td>
-                <td style="font-style: italic; color: #4a5568; max-width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${cetakCatatan}">${cetakCatatan}</td>
-                <td class="text-center">${tagFotoMasuk}</td>
-                <td class="text-center">${tagFotoPulang}</td>
-                <td class="text-center">${aksiTombol}</td>
-              `;
-            } else {
-              tr.innerHTML = `
-                <td>${item.tanggal}</td>
-                <td>${item.nip}</td>
-                <td><strong>${item.nama}</strong></td>
-                <td><span class="status-badge" style="background-color:${bgBadge}">${item.jenis}</span></td>
-                <td>${item.jamMasuk || '-'}</td>
-                <td>${item.jamPulang || '-'}</td>
-                <td style="color:${warnaMasuk}; font-weight:600;">${txtMasuk}</td>
-                <td style="color:${warnaPulang}; font-weight:600;">${txtPulang}</td>
-                <td style="font-style: italic; color: #4a5568; max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${cetakCatatan}">${cetakCatatan}</td>
-                <td class="text-center">${tagFotoMasuk}</td>
-                <td class="text-center">${tagFotoPulang}</td>
-                <td class="text-center">${aksiTombol}</td>
-              `;
-            }
+            // ================= RENDER STRUKTUR KOLOM UTAMA & 2026 (KINI SAMA) =================
+            tr.innerHTML = `
+              <td>${item.tanggal}</td>
+              <td>${item.nip}</td>
+              <td><strong>${item.nama}</strong></td>
+              <td><span class="status-badge" style="background-color:${bgBadge}">${item.jenis}</span></td>
+              <td>${item.jamMasuk || '-'}</td>
+              <td>${item.jamPulang || '-'}</td>
+              <td style="color:${warnaMasuk}; font-weight:600;">${txtMasuk}</td>
+              <td style="color:${warnaPulang}; font-weight:600;">${txtPulang}</td>
+              <td style="line-height:1.3; max-width:200px; white-space:pre-line;">${isiUraian}</td>
+              <td style="line-height:1.3; max-width:150px;">${isiOutput}</td>
+              <td style="font-style: italic; color: #4a5568; max-width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${cetakCatatan}">${cetakCatatan}</td>
+              <td class="text-center">${tagFotoMasuk}</td>
+              <td class="text-center">${tagFotoPulang}</td>
+              <td class="text-center">${aksiTombol}</td>
+            `;
             tbody.appendChild(tr);
           });
         }
@@ -1096,11 +1081,8 @@
       
       let excelTemplate = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="UTF-8"><style>body { font-family: sans-serif; } .judul { font-size: 16px; font-weight: bold; text-align: center; color: #1a365d; } th { background-color: #2b6cb0; color: white; font-weight: bold; border: 1px solid #cbd5e0; padding: 8px; } td { border: 1px solid #e2e8f0; padding: 6px; } .text-center { text-align: center; } .merah { color: red; font-weight: bold; } .hijau { color: green; font-weight: bold; } .oranye { color: orange; font-weight: bold; }</style></head><body><table><tr>`;
       
-      if (isLaporan2026) {
-        excelTemplate += `<td colspan="12" class="judul">${sheetTitle} PEGAWAI KPU KOTA MALANG</td></tr><tr><td colspan="12"></td></tr><thead><tr><th>Tanggal</th><th>NIP Pegawai</th><th>Nama Lengkap Pegawai</th><th>Status Kehadiran</th><th>Jam Masuk</th><th>Jam Pulang</th><th>Keterangan Masuk</th><th>Keterangan Pulang</th><th>Uraian Tugas / Aktivitas</th><th>Output Kerja / Berkas</th><th>Link Foto Masuk</th><th>Link Foto Pulang</th></tr></thead><tbody>`;
-      } else {
-        excelTemplate += `<td colspan="10" class="judul">${sheetTitle} PEGAWAI KPU KOTA MALANG</td></tr><tr><td colspan="10"></td></tr><thead><tr><th>Tanggal</th><th>NIP Pegawai</th><th>Nama Lengkap Pegawai</th><th>Status Kehadiran</th><th>Jam Masuk</th><th>Jam Pulang</th><th>Keterangan Masuk</th><th>Keterangan Pulang</th><th>Link Foto Masuk</th><th>Link Foto Pulang</th></tr></thead><tbody>`;
-      }
+      // ================= PERBAIKAN EXPORT EXCEL (KOLOM DISEDIAKAN UNTUK KEDUA MODE) =================
+      excelTemplate += `<td colspan="12" class="judul">${sheetTitle} PEGAWAI KPU KOTA MALANG</td></tr><tr><td colspan="12"></td></tr><thead><tr><th>Tanggal</th><th>NIP Pegawai</th><th>Nama Lengkap Pegawai</th><th>Status Kehadiran</th><th>Jam Masuk</th><th>Jam Pulang</th><th>Keterangan Masuk</th><th>Keterangan Pulang</th><th>Uraian Tugas / Aktivitas</th><th>Output Kerja / Berkas</th><th>Link Foto Masuk</th><th>Link Foto Pulang</th></tr></thead><tbody>`;
  
       dataLaporanSekarang.forEach(item => {
         let clsM = '', clsP = '';
@@ -1110,11 +1092,7 @@
           clsP = item.kalkulasiPulang === "PSW" ? 'class="merah"' : (item.kalkulasiPulang === "Tepat Waktu" ? 'class="hijau"' : ''); 
         }
  
-        if (isLaporan2026) {
-          excelTemplate += `<tr><td class="text-center">${item.tanggal}</td><td class="text-center" style="mso-number-format:'\\@';">'${item.nip}</td><td><b>${item.nama}</b></td><td class="text-center">${item.jenis}</td><td class="text-center">${item.jamMasuk || '-'}</td><td class="text-center">${item.jamPulang || '-'}</td><td ${clsM}>${item.kalkulasiMasuk}</td><td ${clsP}>${item.kalkulasiPulang}</td><td>${item.uraian_tugas || '-'}</td><td>${item.output || '-'}</td><td>${item.fotoMasuk || '-'}</td><td>${item.fotoPulang || '-'}</td></tr>`;
-        } else {
-          excelTemplate += `<tr><td class="text-center">${item.tanggal}</td><td class="text-center" style="mso-number-format:'\\@';">'${item.nip}</td><td><b>${item.nama}</b></td><td class="text-center">${item.jenis}</td><td class="text-center">${item.jamMasuk || '-'}</td><td class="text-center">${item.jamPulang || '-'}</td><td ${clsM}>${item.kalkulasiMasuk}</td><td ${clsP}>${item.kalkulasiPulang}</td><td>${item.fotoMasuk || '-'}</td><td>${item.fotoPulang || '-'}</td></tr>`;
-        }
+        excelTemplate += `<tr><td class="text-center">${item.tanggal}</td><td class="text-center" style="mso-number-format:'\\@';">'${item.nip}</td><td><b>${item.nama}</b></td><td class="text-center">${item.jenis}</td><td class="text-center">${item.jamMasuk || '-'}</td><td class="text-center">${item.jamPulang || '-'}</td><td ${clsM}>${item.kalkulasiMasuk}</td><td ${clsP}>${item.kalkulasiPulang}</td><td>${item.uraian_tugas || '-'}</td><td>${item.output || '-'}</td><td>${item.fotoMasuk || '-'}</td><td>${item.fotoPulang || '-'}</td></tr>`;
       });
  
       excelTemplate += `</tbody></table></body></html>`;
