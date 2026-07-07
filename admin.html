@@ -355,7 +355,7 @@
           <option value="CUTI ALASAN PENTING">CUTI ALASAN PENTING</option>
           <option value="CLTN">CLTN (Cuti Di Luar Tanggungan Negara)</option>
           <option value="IJIN SAKIT">IJIN SAKIT</option>
-          <option value="IJIN THDK">IJIN THDK (Tidak Hadir Dengan Keterangan / Ijin Lain)</option>
+          <option value="IJIN THDK">IJIN THDK (Tidak Hadir Tanpa Keterangan / Ijin Lain)</option>
           <option value="DL">DL (Dinas Luar)</option>
        </select>
  
@@ -614,6 +614,7 @@
             let dateB = "";
             if (b.tanggal.includes("/")) {
               const p = b.tanggal.split("/");
+              dateB = `${p[2].length === 2 ? "20" + b.tanggal ? "20" + b.tanggal : b.tanggal : b.tanggal}`;
               dateB = `${p[2].length === 2 ? "20" + p[2] : p[2]}-${p[1].padStart(2, '0')}-${p[0].padStart(2, '0')}`;
             } else {
               dateB = b.tanggal;
@@ -651,16 +652,13 @@
               txtMasuk = item.jenis; txtPulang = item.jenis;
               warnaMasuk = "var(--warning)"; warnaPulang = "var(--warning)";
             } else {
-              const hariIndex = ambilIndexHariDariTglStr(item.tanggal);
-              const jamPulangResmi = (hariIndex === 5) ? jamKerjaSetting.pulangJumat : jamKerjaSetting.pulangSeninKamis;
+              const jamPulangResmi = (ambilIndexHariDariTglStr(item.tanggal) === 5) ? jamKerjaSetting.pulangJumat : jamKerjaSetting.pulangSeninKamis;
               
-              let menitTerlambat = 0;
               if (!item.jamMasuk || item.jamMasuk === "-") {
                 txtMasuk = "Tidak Absen Masuk";
                 warnaMasuk = "var(--danger)";
               } else if (item.keterangan && item.keterangan !== "0" && item.keterangan !== "-") {
                 if(!isNaN(item.keterangan)) {
-                  menitTerlambat = parseInt(item.keterangan);
                   txtMasuk = `Terlambat ${item.keterangan} Menit`; 
                   warnaMasuk = "var(--danger)";
                 } else { 
@@ -669,24 +667,10 @@
               }
               
               if (item.jamPulang && item.jamPulang !== "-") {
-                // Tambahkan akumulasi menit terlambat ke jam pulang resmi
-                let pParts = jamPulangResmi.split(":");
-                let totalMenitTargetPulang = (parseInt(pParts[0]) * 60) + parseInt(pParts[1]) + menitTerlambat;
-                
-                // Ambil jam pulang riil pegawai
-                let rParts = item.jamPulang.split(":");
-                let totalMenitPulangRiil = (parseInt(rParts[0]) * 60) + parseInt(rParts[1]);
-                
-                let selisihMenitPulang = totalMenitPulangRiil - totalMenitTargetPulang;
-                
-                if (selisihMenitPulang >= 0) { 
-                  txtPulang = "Tepat Waktu"; 
-                  warnaPulang = "var(--success)"; 
+                if (hitungMenitSelisih(jamPulangResmi, item.jamPulang) >= 0) { 
+                  txtPulang = "Tepat Waktu"; warnaPulang = "var(--success)"; 
                 } else { 
-                  // Hitung durasi PSW (dibuat positif dengan Math.abs)
-                  let pswMenit = Math.abs(selisihMenitPulang);
-                  txtPulang = `PSW ${pswMenit} Menit`; 
-                  warnaPulang = "var(--danger)"; 
+                  txtPulang = "PSW"; warnaPulang = "var(--danger)"; 
                 }
               }
             }
@@ -1068,7 +1052,7 @@
         if (!["WFO","WFH","WFA"].includes((item.jenis||"").toUpperCase())) { clsM = clsP = 'class="oranye"'; } 
         else { 
           clsM = item.kalkulasiMasuk.includes("Terlambat") || item.kalkulasiMasuk === "Tidak Absen Masuk" ? 'class="merah"' : ''; 
-          clsP = item.kalkulasiPulang.includes("PSW") ? 'class="merah"' : (item.kalkulasiPulang === "Tepat Waktu" ? 'class="hijau"' : ''); 
+          clsP = item.kalkulasiPulang === "PSW" ? 'class="merah"' : (item.kalkulasiPulang === "Tepat Waktu" ? 'class="hijau"' : ''); 
         }
  
         excelTemplate += `<tr><td class="text-center">${item.tanggal}</td><td class="text-center" style="mso-number-format:'\\@';">'${item.nip}</td><td><b>${item.nama}</b></td><td class="text-center">${item.jenis}</td><td class="text-center">${item.jamMasuk || '-'}</td><td class="text-center">${item.jamPulang || '-'}</td><td ${clsM}>${item.kalkulasiMasuk}</td><td ${clsP}>${item.kalkulasiPulang}</td><td>${item.uraian_tugas || '-'}</td><td>${item.output || '-'}</td><td>${item.fotoMasuk || '-'}</td><td>${item.fotoPulang || '-'}</td></tr>`;
