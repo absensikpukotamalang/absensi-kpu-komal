@@ -928,33 +928,33 @@
       document.body.appendChild(link); link.click(); document.body.removeChild(link);
     }
  
-    async function prosesRekapKeterlambatan() {
+async function prosesRekapKeterlambatan() {
       const tglAwal = document.getElementById("delayTglAwal").value;
       const tglAkhir = document.getElementById("delayTglAkhir").value;
       const tbody = document.getElementById("bodyRekapKeterlambatan");
  
       if (!tglAwal || !tglAkhir) { 
-        alert("Rentang tanggal wajib diisi!"); 
+        alert("Rentang tanggal wajib diisi!");
         return; 
       }
       
       showLoading(true);
       tbody.innerHTML = '<tr><td colspan="4" class="text-center">Sedang mengambil dan mengolah data langsung dari ABSENSI...</td></tr>';
-      
       try {
         const res = await fetch(`${API}?mode=admin_laporan&type=custom`);
         const data = await res.json();
-        
         if (data.result === "success") {
           tbody.innerHTML = "";
           let mapDelay = {};
  
           data.data.forEach(item => {
+            // 1. Validasi ketat Jenis Absen (Hanya WFO, WFH, WFA)
             const jenisUpper = (item.jenis || "").trim().toUpperCase();
             if (!["WFO", "WFH", "WFA"].includes(jenisUpper)) {
               return; 
             }
 
+            // 2. Normalisasi format tanggal berkas
             let dStr = "";
             if (item.tanggal && item.tanggal.includes("/")) {
               const p = item.tanggal.split("/");
@@ -963,12 +963,16 @@
               dStr = item.tanggal || "";
             }
  
+            // 3. Saring berdasarkan rentang tanggal yang dipilih
             if (dStr >= tglAwal && dStr <= tglAkhir) {
               let menit = 0;
-              if (item.keterangan && !isNaN(item.keterangan) && item.keterangan !== "-" && item.keterangan !== "") {
+              
+              // Tambahan validasi: Pastikan keterangan tidak kosong, bukan "-", dan benar-benar berupa angka valid
+              if (item.keterangan && item.keterangan !== "-" && item.keterangan !== "" && !isNaN(item.keterangan)) {
                 menit = parseInt(item.keterangan);
               }
  
+              // 4. Masukkan ke dalam map rekapitulasi jika menit keterlambatan > 0
               if (menit > 0) {
                 const nipPegawai = item.nip;
                 const namaPegawai = item.nama || "Tanpa Nama";
@@ -982,12 +986,12 @@
                   };
                 }
                 
-                mapDelay[nipPegawai].frekuensi += 1; 
+                mapDelay[nipPegawai].frekuensi += 1;
                 mapDelay[nipPegawai].totalMenit += menit;
               }
             }
           });
- 
+          
           rekapKeterlambatanProcessed = Object.values(mapDelay);
           
           if (rekapKeterlambatanProcessed.length === 0) {
