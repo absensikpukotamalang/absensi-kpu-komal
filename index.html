@@ -668,27 +668,6 @@
       warningTerlambat.innerText = "TERLAMBAT " + terlambat + " MENIT";
     }
 
-// --- FUNGSI TAMBAHAN: CEK APAKAH SEKARANG DI RENTANG BLOCK ABSEN ---
-    function isDalamRentangKunciAbsen() {
-      const now = new Date();
-      const jamSekarang = now.toLocaleTimeString("id-ID", {
-        hour12: false,
-        hour: "2-digit",
-        minute: "2-digit",
-        timeZone: "Asia/Jakarta"
-      });
-
-      const menitSekarang = timeToMinutes(jamSekarang);
-      const menitMulaiKunci = timeToMinutes("09:30");
-      
-      // Ambil jam pulang resmi dinamis (Senin-Kamis 16:00, Jumat 16:30) lalu kurangi 30 menit
-      const jamPulangResmi = getJamPulangResmi();
-      const menitSelesaiKunci = timeToMinutes(jamPulangResmi) - 30;
-
-      return menitSekarang >= menitMulaiKunci && menitSekarang < menitSelesaiKunci;
-    }
-
-    // --- MODIFIKASI FUNGSI UPDATE TAMPILAN STATUS ---
     function updateTampilanStatus() {
       const now = new Date();
       const jamLengkap = now.toLocaleTimeString("id-ID", {
@@ -714,30 +693,51 @@
       }
 
       updateWarningTerlambat();
-      
-      // LOGIKA KUNCI TOMBOL DAN LAYANAN DI RENTANG JAM 09:30 s.d (JAM PULANG RESMI - 30 MENIT)
-      const listTombol = document.querySelectorAll(".btn-grid button");
-      if (isDalamRentangKunciAbsen()) {
-        closedBox.style.display = "block";
-        mainFormBox.style.display = "none";
-        
-        // Ambil info jam selesai kunci untuk ditampilkan di layar info tutup
-        const jamPulangResmi = getJamPulangResmi();
-        const infoBukaKembali = minutesToTime(timeToMinutes(jamPulangResmi) - 30);
-        
-        closedMessage.innerText = 
-          "Layanan absensi dikunci sementara.\nAbsen pulang dibuka kembali jam " + 
-          infoBukaKembali.replace(":", ".");
-          
-        // Nonaktifkan semua tombol aksi
-        listTombol.forEach(btn => btn.disabled = true);
-        return; // Hentikan proses pengecekan availability default bawaan
-      } else {
-        // Kembalikan keadaan tombol aktif jika di luar rentang kunci
-        listTombol.forEach(btn => btn.disabled = false);
-      }
-
       updateWebAvailability();
+    }
+
+    async function initApp() {
+      try {
+        updateNetworkInfo();
+        submitInfo.innerText = "Memuat data pegawai...";
+
+        const res = await fetch(API, { cache: "no-store" });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+
+        const text = await res.text();
+        let data;
+        try {
+          data = JSON.parse(text);
+        } catch (e) {
+          throw new Error("Response bukan JSON: " + text.substring(0, 200));
+        }
+
+        if (data.result === "error") {
+          throw new Error(data.message || "Terjadi kesalahan");
+        }
+
+        pegawai = data.pegawai || [];
+        config = data.setting || {};
+
+        nama.innerHTML = '<option value="">-- Pilih Nama --</option>';
+        pegawai.forEach(p => {
+          const o = document.createElement("option");
+          o.value = p.nama;
+          o.textContent = p.nama;
+          nama.appendChild(o);
+        });
+
+        submitInfo.innerText = "";
+        updateTampilanStatus();
+        startRealtime();
+        startCamera();
+        initSessionAutoRefresh();
+
+      } catch (err) {
+        console.error(err);
+        submitInfo.innerText = "Gagal memuat data!";
+        tampilkanDialog("Gagal Memuat Data", err.message, "error");
+      }
     }
 
     async function startCamera() {
