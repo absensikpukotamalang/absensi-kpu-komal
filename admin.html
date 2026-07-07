@@ -652,8 +652,6 @@
               txtMasuk = item.jenis; txtPulang = item.jenis;
               warnaMasuk = "var(--warning)"; warnaPulang = "var(--warning)";
             } else {
-              const jamPulangResmi = (ambilIndexHariDariTglStr(item.tanggal) === 5) ? jamKerjaSetting.pulangJumat : jamKerjaSetting.pulangSeninKamis;
-              
               if (!item.jamMasuk || item.jamMasuk === "-") {
                 txtMasuk = "Tidak Absen Masuk";
                 warnaMasuk = "var(--danger)";
@@ -666,13 +664,33 @@
                 }
               }
               
+              // --- PERBAIKAN LOGIKA KET. PULANG (KOMPENSASI KETERLAMBATAN / PSW) ---
               if (item.jamPulang && item.jamPulang !== "-") {
-                if (hitungMenitSelisih(jamPulangResmi, item.jamPulang) >= 0) { 
-                  txtPulang = "Tepat Waktu"; warnaPulang = "var(--success)"; 
-                } else { 
-                  txtPulang = "PSW"; warnaPulang = "var(--danger)"; 
+                const jamPulangResmiStr = (ambilIndexHariDariTglStr(item.tanggal) === 5) ? jamKerjaSetting.pulangJumat : jamKerjaSetting.pulangSeninKamis;
+                
+                let menitTerlambat = 0;
+                if (item.keterangan && !isNaN(item.keterangan) && item.keterangan !== "0" && item.keterangan !== "-") {
+                  menitTerlambat = parseInt(item.keterangan);
+                }
+
+                const partsResmi = jamPulangResmiStr.split(":");
+                const totalMenitSeharusnya = (parseInt(partsResmi[0]) * 60) + parseInt(partsResmi[1]) + menitTerlambat;
+
+                const partsPulangPegawai = item.jamPulang.split(":");
+                const totalMenitRealisasi = (parseInt(partsPulangPegawai[0]) * 60) + parseInt(partsPulangPegawai[1]);
+
+                const selisihMenitPulang = totalMenitRealisasi - totalMenitSeharusnya;
+
+                if (selisihMenitPulang >= 0) {
+                  txtPulang = "Tepat Waktu";
+                  warnaPulang = "var(--success)";
+                } else {
+                  const kekuranganMenit = Math.abs(selisihMenitPulang);
+                  txtPulang = `PSW ${kekuranganMenit} Menit`;
+                  warnaPulang = "var(--danger)";
                 }
               }
+              // --- AKHIR PERBAIKAN LOGIKA KET. PULANG ---
             }
  
             item.kalkulasiMasuk = txtMasuk; item.kalkulasiPulang = txtPulang;
@@ -928,33 +946,34 @@
       document.body.appendChild(link); link.click(); document.body.removeChild(link);
     }
  
-async function prosesRekapKeterlambatan() {
+    async function prosesRekapKeterlambatan() {
       const tglAwal = document.getElementById("delayTglAwal").value;
       const tglAkhir = document.getElementById("delayTglAkhir").value;
       const tbody = document.getElementById("bodyRekapKeterlambatan");
  
       if (!tglAwal || !tglAkhir) { 
-        alert("Rentang tanggal wajib diisi!");
+        alert("Rentang tanggal wajib diisi!"); 
         return; 
       }
       
       showLoading(true);
       tbody.innerHTML = '<tr><td colspan="4" class="text-center">Sedang mengambil dan mengolah data langsung dari ABSENSI...</td></tr>';
+      
       try {
         const res = await fetch(`${API}?mode=admin_laporan&type=custom`);
         const data = await res.json();
+        
         if (data.result === "success") {
           tbody.innerHTML = "";
           let mapDelay = {};
  
           data.data.forEach(item => {
-            // 1. Validasi ketat Jenis Absen (Hanya WFO, WFH, WFA)
+            // Saring ketat hanya WFO, WFH, WFA
             const jenisUpper = (item.jenis || "").trim().toUpperCase();
             if (!["WFO", "WFH", "WFA"].includes(jenisUpper)) {
               return; 
             }
 
-            // 2. Normalisasi format tanggal berkas
             let dStr = "";
             if (item.tanggal && item.tanggal.includes("/")) {
               const p = item.tanggal.split("/");
@@ -963,16 +982,13 @@ async function prosesRekapKeterlambatan() {
               dStr = item.tanggal || "";
             }
  
-            // 3. Saring berdasarkan rentang tanggal yang dipilih
             if (dStr >= tglAwal && dStr <= tglAkhir) {
               let menit = 0;
-              
-              // Tambahan validasi: Pastikan keterangan tidak kosong, bukan "-", dan benar-benar berupa angka valid
+              // Tambahan pengaman anti-NaN jika kolom keterangan berisi berkas teks non-angka
               if (item.keterangan && item.keterangan !== "-" && item.keterangan !== "" && !isNaN(item.keterangan)) {
                 menit = parseInt(item.keterangan);
               }
  
-              // 4. Masukkan ke dalam map rekapitulasi jika menit keterlambatan > 0
               if (menit > 0) {
                 const nipPegawai = item.nip;
                 const namaPegawai = item.nama || "Tanpa Nama";
@@ -986,12 +1002,12 @@ async function prosesRekapKeterlambatan() {
                   };
                 }
                 
-                mapDelay[nipPegawai].frekuensi += 1;
+                mapDelay[nipPegawai].frekuensi += 1; 
                 mapDelay[nipPegawai].totalMenit += menit;
               }
             }
           });
-          
+ 
           rekapKeterlambatanProcessed = Object.values(mapDelay);
           
           if (rekapKeterlambatanProcessed.length === 0) {
@@ -1056,7 +1072,7 @@ async function prosesRekapKeterlambatan() {
         if (!["WFO","WFH","WFA"].includes((item.jenis||"").toUpperCase())) { clsM = clsP = 'class="oranye"'; } 
         else { 
           clsM = item.kalkulasiMasuk.includes("Terlambat") || item.kalkulasiMasuk === "Tidak Absen Masuk" ? 'class="merah"' : ''; 
-          clsP = item.kalkulasiPulang === "PSW" ? 'class="merah"' : (item.kalkulasiPulang === "Tepat Waktu" ? 'class="hijau"' : ''); 
+          clsP = item.kalkulasiPulang.includes("PSW") ? 'class="merah"' : (item.kalkulasiPulang === "Tepat Waktu" ? 'class="hijau"' : ''); 
         }
  
         excelTemplate += `<tr><td class="text-center">${item.tanggal}</td><td class="text-center" style="mso-number-format:'\\@';">'${item.nip}</td><td><b>${item.nama}</b></td><td class="text-center">${item.jenis}</td><td class="text-center">${item.jamMasuk || '-'}</td><td class="text-center">${item.jamPulang || '-'}</td><td ${clsM}>${item.kalkulasiMasuk}</td><td ${clsP}>${item.kalkulasiPulang}</td><td>${item.uraian_tugas || '-'}</td><td>${item.output || '-'}</td><td>${item.fotoMasuk || '-'}</td><td>${item.fotoPulang || '-'}</td></tr>`;
