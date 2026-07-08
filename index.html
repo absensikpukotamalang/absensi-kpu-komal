@@ -561,7 +561,7 @@
       return minutesToTime(total);
     }
 
-    function isWebOpenNow() {
+function isWebOpenNow() {
       const now = new Date();
       const jamSekarang = now.toLocaleTimeString("id-ID", {
         hour12: false,
@@ -570,14 +570,17 @@
         timeZone: "Asia/Jakarta"
       });
 
-      const jamBukaWeb = getConfigTime("jam_buka_web", "06:00");
-      const jamTutupWeb = getConfigTime("jam_tutup_web", "18:00");
-
       const menitSekarang = timeToMinutes(jamSekarang);
-      const menitBuka = timeToMinutes(jamBukaWeb);
-      const menitTutup = timeToMinutes(jamTutupWeb);
+      const menitBukaPagi = timeToMinutes(getConfigTime("jam_buka_web", "06:00"));
+      const menitBatasKeterlambatan = timeToMinutes("08:30");
+      const menitBukaSore = timeToMinutes("15:30");
+      const menitTutupMalam = timeToMinutes(getConfigTime("jam_tutup_web", "18:00"));
 
-      return menitSekarang >= menitBuka && menitSekarang <= menitTutup;
+      // Aplikasi dibuka pagi (06.00 - 08.30) ATAU sore hari (15.30 - 18.00)
+      const kondisiPagi = (menitSekarang >= menitBukaPagi && menitSekarang < menitBatasKeterlambatan);
+      const kondisiSore = (menitSekarang >= menitBukaSore && menitSekarang <= menitTutupMalam);
+
+      return (kondisiPagi || kondisiSore);
     }
 
     function updateWebAvailability() {
@@ -593,31 +596,39 @@
       });
 
       const menitSekarang = timeToMinutes(jamSekarang);
-      const menitBuka = timeToMinutes(jamBukaWeb);
-      const menitTutup = timeToMinutes(jamTutupWeb);
+      const menitBukaPagi = timeToMinutes(jamBukaWeb);
+      const menitBatasKeterlambatan = timeToMinutes("08:30");
+      const menitBukaSore = timeToMinutes("15:30");
+      const menitTutupMalam = timeToMinutes(jamTutupWeb);
 
-      if (menitSekarang < menitBuka) {
+      // Skenario 1: Belum masuk jam operasional pagi (< 06.00)
+      if (menitSekarang < menitBukaPagi) {
         closedBox.style.display = "block";
         mainFormBox.style.display = "none";
         closedMessage.innerText =
-          "Layanan absensi belum buka.\nJam layanan " +
-          jamBukaWeb.replace(":", ".") +
-          " - " +
-          jamTutupWeb.replace(":", ".");
+          "Layanan absensi belum buka.\nJam layanan pagi: " +
+          jamBukaWeb.replace(":", ".") + " - 08.30";
         return;
       }
 
-      if (menitSekarang > menitTutup) {
+      // Skenario 2: Melebihi batas keterlambatan pagi tetapi belum jam pulang (08.30 - 15.30)
+      if (menitSekarang >= menitBatasKeterlambatan && menitSekarang < menitBukaSore) {
+        closedBox.style.display = "block";
+        mainFormBox.style.display = "none";
+        closedMessage.innerText = "ANDA SUDAH MELEBIHI BATAS KETERLAMBATAN\n\nLayanan absensi pulang akan dibuka kembali pukul 15.30.";
+        return;
+      }
+
+      // Skenario 3: Sudah melewati batas akhir operasional malam (> 18.00)
+      if (menitSekarang > menitTutupMalam) {
         closedBox.style.display = "block";
         mainFormBox.style.display = "none";
         closedMessage.innerText =
-          "Layanan absensi sudah tutup.\nJam layanan " +
-          jamBukaWeb.replace(":", ".") +
-          " - " +
-          jamTutupWeb.replace(":", ".");
+          "Layanan absensi sudah tutup.\nJam operasional sore: 15.30 - " + jamTutupWeb.replace(":", ".");
         return;
       }
 
+      // Jika berada di dalam range (06.00-08.30) atau (15.30-18.00)
       closedBox.style.display = "none";
       mainFormBox.style.display = "block";
     }
