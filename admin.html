@@ -217,8 +217,13 @@
  
         <button id="btnProsesLaporan" onclick="tarikLaporanAdmin()">PROSES DATA REKAP</button>
  
-        <div style="text-align: right;">
-          <button class="btn-excel" id="btnExportLaporan" onclick="exportKeExcelLaporan()"> Excel &nbsp;📥 EXPORT TO EXCEL</button>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px; margin-bottom: 10px;">
+          <div id="rekapJumlahData" style="font-size: 13px; font-weight: 600; color: #4a5568; background: #edf2f7; padding: 10px 15px; border-radius: 8px; border-left: 4px solid var(--admin-color);">
+            Jumlah di List: <strong>0</strong> Pegawai &nbsp;|&nbsp; 
+            Absen Masuk: <strong>0</strong> &nbsp;|&nbsp; 
+            Absen Pulang: <strong>0</strong>
+          </div>
+          <button class="btn-excel" id="btnExportLaporan" onclick="exportKeExcelLaporan()" style="margin-top: 0; margin-bottom: 0;"> Excel &nbsp;📥 EXPORT TO EXCEL</button>
         </div>
  
         <div class="table-responsive">
@@ -599,6 +604,7 @@
  
           if(dataDisaring.length === 0) { 
             tbody.innerHTML = `<tr><td colspan="${targetColspan}" class="text-center" style="color:var(--danger); padding:15px;">Tidak ditemukan data presensi pada periode ini.</td></tr>`; 
+            document.getElementById("rekapJumlahData").innerHTML = `Jumlah di List: <strong>0</strong> Pegawai &nbsp;|&nbsp; Absen Masuk: <strong>0</strong> &nbsp;|&nbsp; Absen Pulang: <strong>0</strong>`;
             return; 
           }
           
@@ -630,8 +636,15 @@
           });
           
           dataLaporanSekarang = dataDisaring;
+
+          let countTotal = dataDisaring.length;
+          let countMasuk = 0;
+          let countPulang = 0;
  
           dataDisaring.forEach(item => {
+            if (item.jamMasuk && item.jamMasuk !== "-") countMasuk++;
+            if (item.jamPulang && item.jamPulang !== "-") countPulang++;
+
             const tr = document.createElement("tr");
             
             tr.style.cursor = "pointer";
@@ -733,6 +746,13 @@
             `;
             tbody.appendChild(tr);
           });
+          
+          document.getElementById("rekapJumlahData").innerHTML = `
+            Jumlah di List: <strong>${countTotal}</strong> Pegawai &nbsp;|&nbsp; 
+            Absen Masuk: <strong style="color: var(--success)">${countMasuk}</strong> &nbsp;|&nbsp; 
+            Absen Pulang: <strong style="color: var(--danger)">${countPulang}</strong>
+          `;
+          
         }
       } catch(e) { console.error(e); } finally { showLoading(false); }
     }
