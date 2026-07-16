@@ -219,9 +219,11 @@
  
         <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px; margin-bottom: 10px;">
           <div id="rekapJumlahData" style="font-size: 13px; font-weight: 600; color: #4a5568; background: #edf2f7; padding: 10px 15px; border-radius: 8px; border-left: 4px solid var(--admin-color);">
-            Jumlah di List: <strong>0</strong> Pegawai &nbsp;|&nbsp; 
-            Absen Masuk: <strong>0</strong> &nbsp;|&nbsp; 
-            Absen Pulang: <strong>0</strong>
+            Total Data: <strong>0</strong> &nbsp;|&nbsp; 
+            Masuk: <strong>0</strong> &nbsp;|&nbsp; 
+            Pulang: <strong>0</strong> &nbsp;|&nbsp;
+            DL: <strong>0</strong> &nbsp;|&nbsp;
+            Ijin/Cuti: <strong>0</strong>
           </div>
           <button class="btn-excel" id="btnExportLaporan" onclick="exportKeExcelLaporan()" style="margin-top: 0; margin-bottom: 0;"> Excel &nbsp;📥 EXPORT TO EXCEL</button>
         </div>
@@ -604,7 +606,7 @@
  
           if(dataDisaring.length === 0) { 
             tbody.innerHTML = `<tr><td colspan="${targetColspan}" class="text-center" style="color:var(--danger); padding:15px;">Tidak ditemukan data presensi pada periode ini.</td></tr>`; 
-            document.getElementById("rekapJumlahData").innerHTML = `Jumlah di List: <strong>0</strong> Pegawai &nbsp;|&nbsp; Absen Masuk: <strong>0</strong> &nbsp;|&nbsp; Absen Pulang: <strong>0</strong>`;
+            document.getElementById("rekapJumlahData").innerHTML = `Total Data: <strong>0</strong> &nbsp;|&nbsp; Masuk: <strong>0</strong> &nbsp;|&nbsp; Pulang: <strong>0</strong> &nbsp;|&nbsp; DL: <strong>0</strong> &nbsp;|&nbsp; Ijin/Cuti: <strong>0</strong>`;
             return; 
           }
           
@@ -640,10 +642,20 @@
           let countTotal = dataDisaring.length;
           let countMasuk = 0;
           let countPulang = 0;
+          let countDL = 0;
+          let countIjinCuti = 0;
  
           dataDisaring.forEach(item => {
-            if (item.jamMasuk && item.jamMasuk !== "-") countMasuk++;
-            if (item.jamPulang && item.jamPulang !== "-") countPulang++;
+            const jenisUpper = (item.jenis || "").trim().toUpperCase();
+
+            if (["WFO", "WFH", "WFA"].includes(jenisUpper)) {
+              if (item.jamMasuk && item.jamMasuk !== "-") countMasuk++;
+              if (item.jamPulang && item.jamPulang !== "-") countPulang++;
+            } else if (jenisUpper === "DL") {
+              countDL++;
+            } else if (jenisUpper.includes("IJIN") || jenisUpper.includes("CUTI") || jenisUpper === "CLTN") {
+              countIjinCuti++;
+            }
 
             const tr = document.createElement("tr");
             
@@ -659,8 +671,7 @@
             
             let txtMasuk = "Tepat Waktu", warnaMasuk = "var(--success)"; 
             let txtPulang = "Belum Absen", warnaPulang = "inherit";
-            const jenisUpper = (item.jenis || "").trim().toUpperCase();
- 
+            
             if (!["WFO", "WFH", "WFA"].includes(jenisUpper)) {
               txtMasuk = item.jenis; txtPulang = item.jenis;
               warnaMasuk = "var(--warning)"; warnaPulang = "var(--warning)";
@@ -677,7 +688,6 @@
                 }
               }
               
-              // --- PERBAIKAN LOGIKA KET. PULANG (KOMPENSASI KETERLAMBATAN / PSW) ---
               if (item.jamPulang && item.jamPulang !== "-") {
                 const jamPulangResmiStr = (ambilIndexHariDariTglStr(item.tanggal) === 5) ? jamKerjaSetting.pulangJumat : jamKerjaSetting.pulangSeninKamis;
                 
@@ -703,7 +713,6 @@
                   warnaPulang = "var(--danger)";
                 }
               }
-              // --- AKHIR PERBAIKAN LOGIKA KET. PULANG ---
             }
  
             item.kalkulasiMasuk = txtMasuk; item.kalkulasiPulang = txtPulang;
@@ -748,9 +757,11 @@
           });
           
           document.getElementById("rekapJumlahData").innerHTML = `
-            Jumlah di List: <strong>${countTotal}</strong> Pegawai &nbsp;|&nbsp; 
-            Absen Masuk: <strong style="color: var(--success)">${countMasuk}</strong> &nbsp;|&nbsp; 
-            Absen Pulang: <strong style="color: var(--danger)">${countPulang}</strong>
+            Total Data: <strong>${countTotal}</strong> &nbsp;|&nbsp; 
+            Masuk: <strong style="color: var(--success)">${countMasuk}</strong> &nbsp;|&nbsp; 
+            Pulang: <strong style="color: var(--danger)">${countPulang}</strong> &nbsp;|&nbsp;
+            DL: <strong style="color: var(--purple)">${countDL}</strong> &nbsp;|&nbsp;
+            Ijin/Cuti: <strong style="color: var(--warning)">${countIjinCuti}</strong>
           `;
           
         }
@@ -988,7 +999,6 @@
           let mapDelay = {};
  
           data.data.forEach(item => {
-            // Saring ketat hanya WFO, WFH, WFA
             const jenisUpper = (item.jenis || "").trim().toUpperCase();
             if (!["WFO", "WFH", "WFA"].includes(jenisUpper)) {
               return; 
@@ -1004,7 +1014,6 @@
  
             if (dStr >= tglAwal && dStr <= tglAkhir) {
               let menit = 0;
-              // Tambahan pengaman anti-NaN jika kolom keterangan berisi berkas teks non-angka
               if (item.keterangan && item.keterangan !== "-" && item.keterangan !== "" && !isNaN(item.keterangan)) {
                 menit = parseInt(item.keterangan);
               }
