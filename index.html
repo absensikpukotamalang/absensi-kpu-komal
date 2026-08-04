@@ -16,39 +16,28 @@
       --warning: #fff3cd;
       --shadow: 0 8px 20px rgba(0,0,0,0.18);
     }
-
     * {
       box-sizing: border-box;
       -webkit-tap-highlight-color: transparent;
     }
-
     html, body {
       margin: 0;
       padding: 0;
       font-family: Arial, sans-serif;
     }
-
     body {
       min-height: 100vh;
       padding: 16px;
       color: white;
       transition: background 0.3s ease;
     }
-
-    body.masuk {
-      background: var(--bg-masuk);
-    }
-
-    body.pulang {
-      background: var(--bg-pulang);
-    }
-
+    body.masuk { background: var(--bg-masuk); }
+    body.pulang { background: var(--bg-pulang); }
     .container {
       width: 100%;
       max-width: 620px;
       margin: 0 auto;
     }
-
     .page-title {
       font-size: 34px;
       line-height: 1.2;
@@ -57,7 +46,6 @@
       margin: 8px 0 10px;
       letter-spacing: 0.3px;
     }
-
     .online-text {
       text-align: center;
       font-size: 18px;
@@ -65,7 +53,6 @@
       margin-bottom: 18px;
       color: white;
     }
-
     .status-card {
       background: var(--card);
       border-radius: 24px;
@@ -74,21 +61,18 @@
       text-align: center;
       margin-bottom: 18px;
     }
-
     .status-main {
       font-size: 32px;
       font-weight: 800;
       line-height: 1.2;
       margin-bottom: 10px;
     }
-
     .clock-text {
       font-size: 25px;
       font-weight: 800;
       margin-bottom: 10px;
       letter-spacing: 1px;
     }
-
     .warning-text {
       font-size: 20px;
       line-height: 1.45;
@@ -97,7 +81,6 @@
       min-height: 30px;
       white-space: pre-wrap;
     }
-
     .closed-card {
       display: none;
       background: rgba(0, 0, 0, 0.18);
@@ -107,32 +90,27 @@
       text-align: center;
       margin-bottom: 18px;
     }
-
     .closed-title {
       font-size: 30px;
       font-weight: 800;
       margin-bottom: 10px;
       line-height: 1.3;
     }
-
     .closed-message {
       font-size: 22px;
       line-height: 1.5;
       font-weight: 700;
       white-space: pre-wrap;
     }
-
     .section-card {
       background: transparent;
       border-radius: 20px;
       margin-top: 8px;
     }
-
     .field {
       margin-bottom: 18px;
       text-align: left;
     }
-
     .field label {
       display: block;
       font-size: 24px;
@@ -140,10 +118,7 @@
       color: var(--label);
       margin-bottom: 10px;
     }
-
-    .field input,
-    .field select,
-    .field textarea {
+    .field input, .field select, .field textarea {
       width: 100%;
       border: 3px solid rgba(0,0,0,0.25);
       border-radius: 22px;
@@ -155,24 +130,20 @@
       outline: none;
       box-shadow: inset 0 1px 2px rgba(0,0,0,0.04);
     }
-
     .field input[readonly] {
       background: #f2f2f2;
       color: #333;
     }
-
     .field textarea {
       min-height: 120px;
       resize: vertical;
     }
-
     .sub-title {
       font-size: 28px;
       font-weight: 800;
       text-align: center;
       margin: 24px 0 14px;
     }
-
     .camera-box {
       width: 100%;
       background: rgba(255,255,255,0.12);
@@ -181,7 +152,6 @@
       box-shadow: var(--shadow);
       padding: 10px;
     }
-
     video, img {
       display: block;
       width: 100%;
@@ -190,14 +160,12 @@
       min-height: 240px;
       object-fit: cover;
     }
-
     .btn-grid {
       display: grid;
       grid-template-columns: 1fr;
       gap: 12px;
       margin-top: 18px;
     }
-
     button {
       width: 100%;
       border: none;
@@ -209,28 +177,14 @@
       box-shadow: var(--shadow);
       transition: all 0.2s;
     }
-
     button:disabled {
       opacity: 0.6;
       cursor: not-allowed;
       transform: none !important;
     }
-
-    .btn-primary {
-      background: #ffffff;
-      color: #111827;
-    }
-
-    .btn-secondary {
-      background: #facc15;
-      color: #111827;
-    }
-
-    .btn-success {
-      background: #0f172a;
-      color: #ffffff;
-    }
-
+    .btn-primary { background: #ffffff; color: #111827; }
+    .btn-secondary { background: #facc15; color: #111827; }
+    .btn-success { background: #0f172a; color: #ffffff; }
     .submit-info {
       margin-top: 18px;
       text-align: center;
@@ -239,7 +193,6 @@
       line-height: 1.5;
       white-space: pre-wrap;
     }
-
     .helper-text {
       text-align: center;
       font-size: 18px;
@@ -247,22 +200,17 @@
       line-height: 1.5;
       margin-top: 8px;
     }
-
     /* CSS MODAL KUSTOM DINAMIS */
     .custom-modal-overlay {
       display: none;
       position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
+      top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(0, 0, 0, 0.7);
       z-index: 9999;
       justify-content: center;
       align-items: center;
       padding: 20px;
     }
-
     .custom-modal-box {
       background: #ffffff;
       color: #1f2937;
@@ -274,23 +222,19 @@
       text-align: center;
       animation: modalPop 0.23s ease-out;
     }
-
     @keyframes modalPop {
       from { transform: scale(0.92); opacity: 0; }
       to { transform: scale(1); opacity: 1; }
     }
-
     .custom-modal-title {
       font-size: 36px;
       font-weight: 800;
       margin-bottom: 16px;
       letter-spacing: -0.5px;
     }
-
     .custom-modal-box.success .custom-modal-title { color: #15834f; }
     .custom-modal-box.error .custom-modal-title { color: #c73d3d; }
     .custom-modal-box.warning .custom-modal-title { color: #d97706; }
-
     .custom-modal-message {
       font-size: 22px;
       line-height: 1.5;
@@ -299,7 +243,6 @@
       margin-bottom: 28px;
       white-space: pre-wrap;
     }
-
     .custom-modal-btn {
       background: #111827;
       color: #ffffff;
@@ -313,11 +256,9 @@
       min-width: 140px;
       box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
     }
-
     .custom-modal-btn:active:not(:disabled) {
       transform: scale(0.97);
     }
-
     @media (min-width: 640px) {
       body { padding: 24px; }
       .btn-grid { grid-template-columns: 1fr 1fr 1fr; }
@@ -349,12 +290,10 @@
           <option value="">-- Pilih Nama --</option>
         </select>
       </div>
-
       <div class="field">
         <label for="nip">NIP</label>
         <input type="text" id="nip" readonly />
       </div>
-
       <div class="field">
         <label for="jenisAbsen">JENIS ABSEN</label>
         <select id="jenisAbsen">
@@ -373,22 +312,18 @@
           <label for="jabatan">JABATAN</label>
           <input type="text" id="jabatan" readonly />
         </div>
-
         <div class="field">
           <label for="atasan">ATASAN</label>
           <input type="text" id="atasan" readonly />
         </div>
-
         <div class="field">
           <label for="uraianTugas">URAIAN TUGAS</label>
           <textarea id="uraianTugas" placeholder="Tulis uraian tugas di sini"></textarea>
         </div>
-
         <div class="field">
           <label for="outputKerja">OUTPUT</label>
           <textarea id="outputKerja" placeholder="Tulis output pekerjaan di sini"></textarea>
         </div>
-
         <div class="field">
           <label for="alamat">ALAMAT</label>
           <textarea id="alamat" placeholder="Tulis alamat di sini"></textarea>
@@ -396,12 +331,10 @@
       </div>
 
       <div class="sub-title">AMBIL SELFIE</div>
-
       <div class="camera-box">
         <video id="video" autoplay playsinline></video>
         <img id="preview" alt="Preview Foto" style="display:none;" />
       </div>
-
       <div class="helper-text">
         Pastikan wajah terlihat jelas sebelum menekan tombol kirim.
       </div>
@@ -411,7 +344,6 @@
         <button type="button" class="btn-secondary" id="btnUlang" onclick="ulangFoto()">ULANG FOTO</button>
         <button type="button" class="btn-success" id="btnKirim" onclick="kirimAbsen()">KIRIM ABSEN</button>
       </div>
-
       <div class="submit-info" id="submitInfo"></div>
     </div>
   </div>
@@ -433,6 +365,9 @@
     let config = {};
     let fotoBase64 = null;
     let sessionTimer = null;
+    
+    // VARIABEL PENYIMPAN SELISIH WAKTU SERVER
+    let serverTimeOffset = 0; 
 
     const nama = document.getElementById("nama");
     const nip = document.getElementById("nip");
@@ -454,7 +389,6 @@
     const closedMessage = document.getElementById("closedMessage");
     const mainFormBox = document.getElementById("mainFormBox");
     
-    // Tombol Interaksi
     const btnAmbil = document.getElementById("btnAmbil");
     const btnUlang = document.getElementById("btnUlang");
     const btnKirim = document.getElementById("btnKirim");
@@ -486,6 +420,12 @@
       };
     }
 
+    // ENGINE BARU: PENGGANTI new Date() 
+    // Menggabungkan waktu perangkat pengguna dengan selisih dari server
+    function getWaktuServer() {
+        return new Date(Date.now() + serverTimeOffset);
+    }
+
     function getConfigTime(key, fallback) {
       const val = String(config[key] || "").trim();
       return /^\d{2}:\d{2}$/.test(val) ? val : fallback;
@@ -509,7 +449,7 @@
       return new Intl.DateTimeFormat("id-ID", {
         weekday: "long",
         timeZone: "Asia/Jakarta"
-      }).format(new Date()).toLowerCase();
+      }).format(getWaktuServer()).toLowerCase();
     }
 
     function getJamPulangResmi() {
@@ -524,7 +464,7 @@
     }
 
     function getStatusSekarang() {
-      const now = new Date();
+      const now = getWaktuServer();
       const jamShort = now.toLocaleTimeString("id-ID", {
         hour12: false,
         hour: "2-digit",
@@ -536,7 +476,8 @@
     }
 
     function hitungTerlambatSekarang() {
-      const jamSekarang = new Date().toLocaleTimeString("id-ID", {
+      const now = getWaktuServer();
+      const jamSekarang = now.toLocaleTimeString("id-ID", {
         hour12: false,
         hour: "2-digit",
         minute: "2-digit",
@@ -554,7 +495,7 @@
     }
 
     function isWebOpenNow() {
-      const now = new Date();
+      const now = getWaktuServer();
       const jamSekarang = now.toLocaleTimeString("id-ID", {
         hour12: false,
         hour: "2-digit",
@@ -575,7 +516,8 @@
     function updateWebAvailability() {
       const jamBukaWeb = getConfigTime("jam_buka_web", "06:00");
       const jamTutupWeb = getConfigTime("jam_tutup_web", "18:00");
-      const now = new Date();
+      
+      const now = getWaktuServer();
       const jamSekarang = now.toLocaleTimeString("id-ID", {
         hour12: false,
         hour: "2-digit",
@@ -650,7 +592,7 @@
     }
 
     function updateTampilanStatus() {
-      const now = new Date();
+      const now = getWaktuServer();
       const jamLengkap = now.toLocaleTimeString("id-ID", {
         hour12: false,
         hour: "2-digit",
@@ -691,6 +633,12 @@
         if (data.result === "error") {
           throw new Error(data.message || "Terjadi kesalahan");
         }
+        
+        // MENYIMPAN SELISIH WAKTU JIKA ADA DATA DARI SERVER
+        if (data.serverTime) {
+           serverTimeOffset = data.serverTime - Date.now();
+        }
+
         pegawai = data.pegawai || [];
         config = data.setting || {};
 
@@ -817,11 +765,12 @@
           }
         }
 
-        // KUNCI TOMBOL SAAT PROSES PENGIRIMAN
         aktifkanTombol(false);
         submitInfo.innerText = "Mengirim absensi... Mohon tunggu jangan tutup halaman.";
 
-        const jamSekarang = new Date().toLocaleTimeString("id-ID", {
+        // Waktu pengiriman juga diambil dari kalibrasi waktu server
+        const now = getWaktuServer();
+        const jamSekarang = now.toLocaleTimeString("id-ID", {
           hour12: false, hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta"
         });
 
@@ -838,9 +787,8 @@
         form.append("output", outputKerja.value.trim());
         form.append("alamat", alamat.value.trim());
 
-        // SET TIMEOUT UNTUK MENGHINDARI LOADING GHOIB / PUTUS DI TENGAH JALAN
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 45000); // 45 Detik maksimal
+        const timeoutId = setTimeout(() => controller.abort(), 45000);
 
         const res = await fetch(API, {
           method: "POST",
@@ -883,7 +831,7 @@
 
       } catch (err) {
         console.error(err);
-        aktifkanTombol(true); // Aktifkan tombol kembali jika gagal
+        aktifkanTombol(true);
         
         if (err.name === "AbortError") {
             submitInfo.innerText = "Koneksi terputus/lambat.";
