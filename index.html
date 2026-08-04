@@ -207,6 +207,13 @@
       font-weight: 800;
       cursor: pointer;
       box-shadow: var(--shadow);
+      transition: all 0.2s;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none !important;
     }
 
     .btn-primary {
@@ -274,13 +281,12 @@
     }
 
     .custom-modal-title {
-      font-size: 36px; /* 1.5x Lebih Besar */
-      font-weight: 800; /* Bold/Tebal */
+      font-size: 36px;
+      font-weight: 800;
       margin-bottom: 16px;
       letter-spacing: -0.5px;
     }
 
-    /* Pewarnaan Tema Judul Dialog */
     .custom-modal-box.success .custom-modal-title { color: #15834f; }
     .custom-modal-box.error .custom-modal-title { color: #c73d3d; }
     .custom-modal-box.warning .custom-modal-title { color: #d97706; }
@@ -308,28 +314,15 @@
       box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
     }
 
-    .custom-modal-btn:active {
+    .custom-modal-btn:active:not(:disabled) {
       transform: scale(0.97);
     }
 
     @media (min-width: 640px) {
-      body {
-        padding: 24px;
-      }
-
-      .btn-grid {
-        grid-template-columns: 1fr 1fr 1fr;
-      }
-
-      .field label {
-        font-size: 22px;
-      }
-
-      .field input,
-      .field select,
-      .field textarea {
-        font-size: 22px;
-      }
+      body { padding: 24px; }
+      .btn-grid { grid-template-columns: 1fr 1fr 1fr; }
+      .field label { font-size: 22px; }
+      .field input, .field select, .field textarea { font-size: 22px; }
     }
   </style>
 </head>
@@ -414,9 +407,9 @@
       </div>
 
       <div class="btn-grid">
-        <button type="button" class="btn-primary" onclick="ambilFoto()">AMBIL FOTO</button>
-        <button type="button" class="btn-secondary" onclick="ulangFoto()">ULANG FOTO</button>
-        <button type="button" class="btn-success" onclick="kirimAbsen()">KIRIM ABSEN</button>
+        <button type="button" class="btn-primary" id="btnAmbil" onclick="ambilFoto()">AMBIL FOTO</button>
+        <button type="button" class="btn-secondary" id="btnUlang" onclick="ulangFoto()">ULANG FOTO</button>
+        <button type="button" class="btn-success" id="btnKirim" onclick="kirimAbsen()">KIRIM ABSEN</button>
       </div>
 
       <div class="submit-info" id="submitInfo"></div>
@@ -432,6 +425,7 @@
   </div>
 
   <script>
+    // MASUKKAN URL GOOGLE APPS SCRIPT ANDA DI SINI
     const API = "https://script.google.com/macros/s/AKfycbxl0fJC2790vwN9DYnr6xCXW_BBuMAIP0M7btnF4SIpwzAw4dV1hTMDP1f6k652sp4/exec";
     const SESSION_MS = 5 * 60 * 1000;
 
@@ -460,7 +454,11 @@
     const closedMessage = document.getElementById("closedMessage");
     const mainFormBox = document.getElementById("mainFormBox");
     
-    // Inisialisasi Elemen Jendela Kustom
+    // Tombol Interaksi
+    const btnAmbil = document.getElementById("btnAmbil");
+    const btnUlang = document.getElementById("btnUlang");
+    const btnKirim = document.getElementById("btnKirim");
+
     const customModal = document.getElementById("customModal");
     const modalBox = document.getElementById("modalBox");
     const modalTitle = document.getElementById("modalTitle");
@@ -474,7 +472,6 @@
     window.addEventListener("online", updateNetworkInfo);
     window.addEventListener("offline", updateNetworkInfo);
 
-    // ENGINE UTAMA PENGGANTI FUNGSI ALERT() BAWAN BROWSER
     function tampilkanDialog(judul, pesanText, tipe = "warning", callback = null) {
       modalBox.className = "custom-modal-box " + tipe;
       modalTitle.innerText = judul;
@@ -517,15 +514,12 @@
 
     function getJamPulangResmi() {
       const hari = getHariJakarta();
-
       if (hari === "senin" || hari === "selasa" || hari === "rabu" || hari === "kamis") {
         return getConfigTime("jam_pulang_senin_kamis", "16:00");
       }
-
       if (hari === "jumat") {
         return getConfigTime("jam_pulang_jumat", "16:30");
       }
-
       return getConfigTime("jam_pulang_senin_kamis", "16:00");
     }
 
@@ -537,7 +531,6 @@
         minute: "2-digit",
         timeZone: "Asia/Jakarta"
       });
-
       const batasGantiForm = getConfigTime("batas_ganti_form", "12:00");
       return jamShort < batasGantiForm ? "MASUK" : "PULANG";
     }
@@ -549,7 +542,6 @@
         minute: "2-digit",
         timeZone: "Asia/Jakarta"
       });
-
       const jamMasukResmi = getConfigTime("jam_masuk", "07:30");
       const terlambat = timeToMinutes(jamSekarang) - timeToMinutes(jamMasukResmi);
       return terlambat > 0 ? terlambat : 0;
@@ -561,7 +553,7 @@
       return minutesToTime(total);
     }
 
-function isWebOpenNow() {
+    function isWebOpenNow() {
       const now = new Date();
       const jamSekarang = now.toLocaleTimeString("id-ID", {
         hour12: false,
@@ -569,24 +561,20 @@ function isWebOpenNow() {
         minute: "2-digit",
         timeZone: "Asia/Jakarta"
       });
-
       const menitSekarang = timeToMinutes(jamSekarang);
       const menitBukaPagi = timeToMinutes(getConfigTime("jam_buka_web", "06:00"));
       const menitBatasKeterlambatan = timeToMinutes("08:30");
       const menitBukaSore = timeToMinutes("15:30");
       const menitTutupMalam = timeToMinutes(getConfigTime("jam_tutup_web", "18:00"));
 
-      // Aplikasi dibuka pagi (06.00 - 08.30) ATAU sore hari (15.30 - 18.00)
       const kondisiPagi = (menitSekarang >= menitBukaPagi && menitSekarang < menitBatasKeterlambatan);
       const kondisiSore = (menitSekarang >= menitBukaSore && menitSekarang <= menitTutupMalam);
-
       return (kondisiPagi || kondisiSore);
     }
 
     function updateWebAvailability() {
       const jamBukaWeb = getConfigTime("jam_buka_web", "06:00");
       const jamTutupWeb = getConfigTime("jam_tutup_web", "18:00");
-
       const now = new Date();
       const jamSekarang = now.toLocaleTimeString("id-ID", {
         hour12: false,
@@ -594,41 +582,30 @@ function isWebOpenNow() {
         minute: "2-digit",
         timeZone: "Asia/Jakarta"
       });
-
       const menitSekarang = timeToMinutes(jamSekarang);
       const menitBukaPagi = timeToMinutes(jamBukaWeb);
       const menitBatasKeterlambatan = timeToMinutes("08:30");
       const menitBukaSore = timeToMinutes("15:30");
       const menitTutupMalam = timeToMinutes(jamTutupWeb);
 
-      // Skenario 1: Belum masuk jam operasional pagi (< 06.00)
       if (menitSekarang < menitBukaPagi) {
         closedBox.style.display = "block";
         mainFormBox.style.display = "none";
-        closedMessage.innerText =
-          "Layanan absensi belum buka.\nJam layanan pagi: " +
-          jamBukaWeb.replace(":", ".") + " - 08.30";
+        closedMessage.innerText = "Layanan absensi belum buka.\nJam layanan pagi: " + jamBukaWeb.replace(":", ".") + " - 08.30";
         return;
       }
-
-      // Skenario 2: Melebihi batas keterlambatan pagi tetapi belum jam pulang (08.30 - 15.30)
       if (menitSekarang >= menitBatasKeterlambatan && menitSekarang < menitBukaSore) {
         closedBox.style.display = "block";
         mainFormBox.style.display = "none";
         closedMessage.innerText = "ANDA SUDAH MELEBIHI BATAS KETERLAMBATAN\n\nLayanan absensi pulang akan dibuka kembali pukul 15.30.";
         return;
       }
-
-      // Skenario 3: Sudah melewati batas akhir operasional malam (> 18.00)
       if (menitSekarang > menitTutupMalam) {
         closedBox.style.display = "block";
         mainFormBox.style.display = "none";
-        closedMessage.innerText =
-          "Layanan absensi sudah tutup.\nJam operasional sore: 15.30 - " + jamTutupWeb.replace(":", ".");
+        closedMessage.innerText = "Layanan absensi sudah tutup.\nJam operasional sore: 15.30 - " + jamTutupWeb.replace(":", ".");
         return;
       }
-
-      // Jika berada di dalam range (06.00-08.30) atau (15.30-18.00)
       closedBox.style.display = "none";
       mainFormBox.style.display = "block";
     }
@@ -642,14 +619,12 @@ function isWebOpenNow() {
     function isiDataPegawai() {
       const selectedNama = nama.value;
       const p = pegawai.find(x => x.nama === selectedNama);
-
       if (!p) {
         nip.value = "";
         jabatan.value = "";
         atasan.value = "";
         return;
       }
-
       nip.value = p.nip || "";
       jabatan.value = p.jabatan || "";
       atasan.value = p.atasan || "";
@@ -658,24 +633,19 @@ function isWebOpenNow() {
 
     function updateWarningTerlambat() {
       const status = getStatusSekarang();
-
       if (status !== "MASUK") {
         warningTerlambat.innerText = "";
         return;
       }
-
       const terlambat = hitungTerlambatSekarang();
-
       if (terlambat <= 0) {
         warningTerlambat.innerText = "";
         return;
       }
-
       if (terlambat > 59) {
         warningTerlambat.innerText = "ANDA MELEBIHI BATAS WAKTU KETERLAMBATAN";
         return;
       }
-
       warningTerlambat.innerText = "TERLAMBAT " + terlambat + " MENIT";
     }
 
@@ -688,7 +658,6 @@ function isWebOpenNow() {
         second: "2-digit",
         timeZone: "Asia/Jakarta"
       });
-
       const status = getStatusSekarang();
       jamText.innerText = jamLengkap.replace(/:/g, ".");
 
@@ -702,7 +671,6 @@ function isWebOpenNow() {
         document.body.className = "pulang";
         formPulang.style.display = "block";
       }
-
       updateWarningTerlambat();
       updateWebAvailability();
     }
@@ -711,10 +679,8 @@ function isWebOpenNow() {
       try {
         updateNetworkInfo();
         submitInfo.innerText = "Memuat data pegawai...";
-
         const res = await fetch(API, { cache: "no-store" });
         if (!res.ok) throw new Error("HTTP " + res.status);
-
         const text = await res.text();
         let data;
         try {
@@ -722,11 +688,9 @@ function isWebOpenNow() {
         } catch (e) {
           throw new Error("Response bukan JSON: " + text.substring(0, 200));
         }
-
         if (data.result === "error") {
           throw new Error(data.message || "Terjadi kesalahan");
         }
-
         pegawai = data.pegawai || [];
         config = data.setting || {};
 
@@ -737,13 +701,11 @@ function isWebOpenNow() {
           o.textContent = p.nama;
           nama.appendChild(o);
         });
-
         submitInfo.innerText = "";
         updateTampilanStatus();
         startRealtime();
         startCamera();
         initSessionAutoRefresh();
-
       } catch (err) {
         console.error(err);
         submitInfo.innerText = "Gagal memuat data!";
@@ -754,11 +716,7 @@ function isWebOpenNow() {
     async function startCamera() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: "user",
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
-          },
+          video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
           audio: false
         });
         video.srcObject = stream;
@@ -770,24 +728,19 @@ function isWebOpenNow() {
 
     function ambilFoto() {
       resetSessionTimer();
-
       if (!isWebOpenNow()) {
         tampilkanDialog("Layanan Tutup", "Layanan absensi sedang tutup.", "warning");
         return;
       }
-
       if (!video.srcObject) {
         tampilkanDialog("Kamera Belum Siap", "Mohon tunggu hingga sistem mendeteksi video aktif.", "warning");
         return;
       }
-
       const canvas = document.createElement("canvas");
       canvas.width = video.videoWidth || 720;
       canvas.height = video.videoHeight || 1280;
-
       const ctx = canvas.getContext("2d");
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
       fotoBase64 = canvas.toDataURL("image/png");
       preview.src = fotoBase64;
       preview.style.display = "block";
@@ -806,7 +759,6 @@ function isWebOpenNow() {
 
     function initSessionAutoRefresh() {
       resetSessionTimer();
-
       ["click", "change", "input", "keydown", "touchstart"].forEach(evt => {
         document.addEventListener(evt, resetSessionTimer, { passive: true });
       });
@@ -826,67 +778,51 @@ function isWebOpenNow() {
       setInterval(updateTampilanStatus, 1000);
     }
 
+    function aktifkanTombol(status) {
+        btnKirim.disabled = !status;
+        btnAmbil.disabled = !status;
+        btnUlang.disabled = !status;
+        btnKirim.innerText = status ? "KIRIM ABSEN" : "MENGIRIM...";
+    }
+
     async function kirimAbsen() {
       try {
         resetSessionTimer();
-
         if (!navigator.onLine) {
           tampilkanDialog("Koneksi Terputus", "Perangkat sedang offline. Periksa koneksi internet Anda.", "error");
           return;
         }
-
         if (!isWebOpenNow()) {
           tampilkanDialog("Layanan Tutup", "Layanan absensi sedang tutup.", "warning");
           return;
         }
-
         if (!nama.value) {
           tampilkanDialog("Validasi Data", "Silakan pilih nama terlebih dahulu.", "warning");
           return;
         }
-
         if (!nip.value) {
           tampilkanDialog("Validasi Data", "NIP belum terisi.", "warning");
           return;
         }
-
         if (!fotoBase64) {
           tampilkanDialog("Validasi Foto", "Silakan ambil foto terlebih dahulu.", "warning");
           return;
         }
 
         const status = getStatusSekarang();
-
         if (status === "PULANG") {
-          if (!jabatan.value.trim()) {
-            tampilkanDialog("Validasi Data", "Jabatan kosong.", "warning");
-            return;
-          }
-          if (!atasan.value.trim()) {
-            tampilkanDialog("Validasi Data", "Atasan kosong.", "warning");
-            return;
-          }
-          if (!uraianTugas.value.trim()) {
-            tampilkanDialog("Validasi Data", "Uraian tugas wajib diisi.", "warning");
-            return;
-          }
-          if (!outputKerja.value.trim()) {
-            tampilkanDialog("Validasi Data", "Output wajib diisi.", "warning");
-            return;
-          }
-          if (!alamat.value.trim()) {
-            tampilkanDialog("Validasi Data", "Alamat wajib diisi.", "warning");
+          if (!jabatan.value.trim() || !atasan.value.trim() || !uraianTugas.value.trim() || !outputKerja.value.trim() || !alamat.value.trim()) {
+            tampilkanDialog("Validasi Data", "Pastikan Jabatan, Atasan, Uraian Tugas, Output, dan Alamat sudah terisi semua.", "warning");
             return;
           }
         }
 
-        submitInfo.innerText = "Mengirim absensi... Mohon tunggu.";
+        // KUNCI TOMBOL SAAT PROSES PENGIRIMAN
+        aktifkanTombol(false);
+        submitInfo.innerText = "Mengirim absensi... Mohon tunggu jangan tutup halaman.";
 
         const jamSekarang = new Date().toLocaleTimeString("id-ID", {
-          hour12: false,
-          hour: "2-digit",
-          minute: "2-digit",
-          timeZone: "Asia/Jakarta"
+          hour12: false, hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta"
         });
 
         const form = new FormData();
@@ -902,46 +838,42 @@ function isWebOpenNow() {
         form.append("output", outputKerja.value.trim());
         form.append("alamat", alamat.value.trim());
 
+        // SET TIMEOUT UNTUK MENGHINDARI LOADING GHOIB / PUTUS DI TENGAH JALAN
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 45000); // 45 Detik maksimal
+
         const res = await fetch(API, {
           method: "POST",
           body: form,
-          cache: "no-store"
+          cache: "no-store",
+          signal: controller.signal
         });
+        
+        clearTimeout(timeoutId);
 
         if (!res.ok) throw new Error("HTTP " + res.status);
-
         const text = await res.text();
+        
         let data;
         try {
           data = JSON.parse(text);
         } catch (e) {
-          throw new Error("Response POST bukan JSON: " + text.substring(0, 200));
+          throw new Error("Response POST bukan JSON.");
         }
 
         if (data.result === "error") {
-          throw new Error(data.message || "Terjadi kesalahan");
+          throw new Error(data.message || "Terjadi kesalahan sistem");
         }
 
         submitInfo.innerText = "Absensi berhasil";
 
         if (status === "MASUK") {
           const terlambat = Number(data.terlambat || 0);
-
           if (terlambat > 0 && terlambat <= 59) {
             const rekomendasiPulang = getRekomendasiPulang(terlambat);
-            tampilkanDialog(
-              "Absensi Berhasil", 
-              "Anda terlambat " + terlambat + " menit.\nRekomendasi jam pulang " + rekomendasiPulang,
-              "success",
-              function() { location.reload(); }
-            );
+            tampilkanDialog("Absensi Berhasil", "Anda terlambat " + terlambat + " menit.\nRekomendasi jam pulang " + rekomendasiPulang, "success", function() { location.reload(); });
           } else if (terlambat > 59) {
-            tampilkanDialog(
-              "Absensi Berhasil", 
-              "Anda melebihi batas waktu keterlambatan.",
-              "success",
-              function() { location.reload(); }
-            );
+            tampilkanDialog("Absensi Berhasil", "Anda melebihi batas waktu keterlambatan.", "success", function() { location.reload(); });
           } else {
             tampilkanDialog("Absensi Berhasil", "Data masuk Anda telah aman tersimpan.", "success", function() { location.reload(); });
           }
@@ -951,13 +883,19 @@ function isWebOpenNow() {
 
       } catch (err) {
         console.error(err);
-        submitInfo.innerText = "Gagal: " + err.message;
-        tampilkanDialog("Gagal Submit Absen", err.message, "error");
+        aktifkanTombol(true); // Aktifkan tombol kembali jika gagal
+        
+        if (err.name === "AbortError") {
+            submitInfo.innerText = "Koneksi terputus/lambat.";
+            tampilkanDialog("Jaringan Bermasalah", "Waktu pengiriman terlalu lama. Pastikan internet Anda stabil. Silakan cek data Anda atau coba kirim ulang.", "error");
+        } else {
+            submitInfo.innerText = "Gagal: " + err.message;
+            tampilkanDialog("Gagal Submit Absen", err.message, "error");
+        }
       }
     }
 
     nama.addEventListener("change", isiDataPegawai);
-
     updateNetworkInfo();
     initApp();
   </script>
