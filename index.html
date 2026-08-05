@@ -366,8 +366,9 @@
     let fotoBase64 = null;
     let sessionTimer = null;
     
-    // VARIABEL PENYIMPAN SELISIH WAKTU SERVER
-    let serverTimeOffset = 0; 
+    // VARIABEL PENYIMPAN WAKTU SERVER DAN STOPWATCH INTERNAL
+    let waktuServerAwal = null; 
+    let waktuLoadAplikasi = null; 
 
     const nama = document.getElementById("nama");
     const nip = document.getElementById("nip");
@@ -420,10 +421,14 @@
       };
     }
 
-    // ENGINE BARU: PENGGANTI new Date() 
-    // Menggabungkan waktu perangkat pengguna dengan selisih dari server
+    // ENGINE TERBARU: MENGGUNAKAN MONOTONIC CLOCK (KEBAL MANIPULASI JAM HP)
     function getWaktuServer() {
-        return new Date(Date.now() + serverTimeOffset);
+        if (waktuServerAwal !== null && waktuLoadAplikasi !== null) {
+            // Waktu berjalan murni dari durasi halaman dibuka, mengabaikan setelan jam HP
+            const durasiBerjalan = performance.now() - waktuLoadAplikasi;
+            return new Date(waktuServerAwal + durasiBerjalan);
+        }
+        return new Date(); // Fallback sebelum data termuat
     }
 
     function getConfigTime(key, fallback) {
@@ -634,9 +639,10 @@
           throw new Error(data.message || "Terjadi kesalahan");
         }
         
-        // MENYIMPAN SELISIH WAKTU JIKA ADA DATA DARI SERVER
+        // MENCATAT WAKTU SERVER DAN START STOPWATCH
         if (data.serverTime) {
-           serverTimeOffset = data.serverTime - Date.now();
+           waktuServerAwal = data.serverTime;
+           waktuLoadAplikasi = performance.now();
         }
 
         pegawai = data.pegawai || [];
@@ -768,7 +774,6 @@
         aktifkanTombol(false);
         submitInfo.innerText = "Mengirim absensi... Mohon tunggu jangan tutup halaman.";
 
-        // Waktu pengiriman juga diambil dari kalibrasi waktu server
         const now = getWaktuServer();
         const jamSekarang = now.toLocaleTimeString("id-ID", {
           hour12: false, hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta"
