@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Absensi KPU Kota Malang</title>
+  <title>SIPRESMA</title>
   <style>
     :root {
       --bg-masuk: #15834f;
@@ -269,7 +269,7 @@
 </head>
 <body class="masuk">
   <div class="container">
-    <div class="page-title">ABSENSI KPU KOTA MALANG</div>
+    <div class="page-title">SIPRESMA KPU KOTA MALANG</div>
     <div class="online-text" id="networkInfo">Online</div>
 
     <div class="status-card">
@@ -279,7 +279,7 @@
     </div>
 
     <div class="closed-card" id="closedBox">
-      <div class="closed-title">LAYANAN ABSENSI TUTUP</div>
+      <div class="closed-title">LAYANAN PRESENSI TUTUP</div>
       <div class="closed-message" id="closedMessage"></div>
     </div>
 
@@ -538,19 +538,19 @@
       if (menitSekarang < menitBukaPagi) {
         closedBox.style.display = "block";
         mainFormBox.style.display = "none";
-        closedMessage.innerText = "Layanan absensi belum buka.\nJam layanan pagi: " + jamBukaWeb.replace(":", ".") + " - 08.30";
+        closedMessage.innerText = "Layanan presensi belum buka.\nJam layanan pagi: " + jamBukaWeb.replace(":", ".") + " - 08.30";
         return;
       }
       if (menitSekarang >= menitBatasKeterlambatan && menitSekarang < menitBukaSore) {
         closedBox.style.display = "block";
         mainFormBox.style.display = "none";
-        closedMessage.innerText = "ANDA SUDAH MELEBIHI BATAS KETERLAMBATAN\n\nLayanan absensi pulang akan dibuka kembali pukul 15.30.";
+        closedMessage.innerText = "ANDA SUDAH MELEBIHI BATAS KETERLAMBATAN\n\nLayanan presensi pulang akan dibuka kembali pukul 15.30.";
         return;
       }
       if (menitSekarang > menitTutupMalam) {
         closedBox.style.display = "block";
         mainFormBox.style.display = "none";
-        closedMessage.innerText = "Layanan absensi sudah tutup.\nJam operasional sore: 15.30 - " + jamTutupWeb.replace(":", ".");
+        closedMessage.innerText = "Layanan presensi sudah tutup.\nJam operasional sore: 15.30 - " + jamTutupWeb.replace(":", ".");
         return;
       }
       closedBox.style.display = "none";
@@ -683,7 +683,7 @@
     function ambilFoto() {
       resetSessionTimer();
       if (!isWebOpenNow()) {
-        tampilkanDialog("Layanan Tutup", "Layanan absensi sedang tutup.", "warning");
+        tampilkanDialog("Layanan Tutup", "Layanan sedang tutup.", "warning");
         return;
       }
       if (!video.srcObject) {
@@ -747,7 +747,7 @@
           return;
         }
         if (!isWebOpenNow()) {
-          tampilkanDialog("Layanan Tutup", "Layanan absensi sedang tutup.", "warning");
+          tampilkanDialog("Layanan Tutup", "Layanan sedang tutup.", "warning");
           return;
         }
         if (!nama.value) {
@@ -772,7 +772,7 @@
         }
 
         aktifkanTombol(false);
-        submitInfo.innerText = "Mengirim absensi... Mohon tunggu jangan tutup halaman.";
+        submitInfo.innerText = "Mengirim presensi... Mohon tunggu jangan tutup halaman.";
 
         const now = getWaktuServer();
         const jamSekarang = now.toLocaleTimeString("id-ID", {
@@ -818,20 +818,20 @@
           throw new Error(data.message || "Terjadi kesalahan sistem");
         }
 
-        submitInfo.innerText = "Absensi berhasil";
+        submitInfo.innerText = "Presensi berhasil";
 
         if (status === "MASUK") {
           const terlambat = Number(data.terlambat || 0);
           if (terlambat > 0 && terlambat <= 59) {
             const rekomendasiPulang = getRekomendasiPulang(terlambat);
-            tampilkanDialog("Absensi Berhasil", "Anda terlambat " + terlambat + " menit.\nRekomendasi jam pulang " + rekomendasiPulang, "success", function() { location.reload(); });
+            tampilkanDialog("Presensi Berhasil", "Anda terlambat " + terlambat + " menit.\nRekomendasi jam pulang " + rekomendasiPulang, "success", function() { location.reload(); });
           } else if (terlambat > 59) {
-            tampilkanDialog("Absensi Berhasil", "Anda melebihi batas waktu keterlambatan.", "success", function() { location.reload(); });
+            tampilkanDialog("Presensi Berhasil", "Anda melebihi batas waktu keterlambatan.", "success", function() { location.reload(); });
           } else {
-            tampilkanDialog("Absensi Berhasil", "Data masuk Anda telah aman tersimpan.", "success", function() { location.reload(); });
+            tampilkanDialog("Presensi Berhasil", "Data masuk Anda telah aman tersimpan.", "success", function() { location.reload(); });
           }
         } else {
-          tampilkanDialog("Absensi Berhasil", "Data pulang Anda telah aman tersimpan.", "success", function() { location.reload(); });
+          tampilkanDialog("Presensi Berhasil", "Data pulang Anda telah aman tersimpan.", "success", function() { location.reload(); });
         }
 
       } catch (err) {
