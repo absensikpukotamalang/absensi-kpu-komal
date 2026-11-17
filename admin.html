@@ -512,7 +512,7 @@
  
     async function muatDaftarPegawaiAdmin() {
       try {
-        const res = await fetch(`${API}?mode=pegawai`);
+        const res = await fetch(API);
         const data = await res.json();
         if(data.result === "success") {
           daftarPegawaiCache = data.pegawai;
@@ -578,8 +578,7 @@
  
       try {
         const reqMode = "admin_laporan";
-        const qs = new URLSearchParams({mode:reqMode,type:type,tglAwal:tglAwal||"",tglAkhir:tglAkhir||"",bulan:bulan||""});
-        const res = await fetch(`${API}?${qs.toString()}`);
+        const res = await fetch(`${API}?mode=${reqMode}&type=${type}`);
         const data = await res.json();
         
         if(data.result === "success") {
@@ -992,8 +991,7 @@
       tbody.innerHTML = '<tr><td colspan="4" class="text-center">Sedang mengambil dan mengolah data langsung dari ABSENSI...</td></tr>';
       
       try {
-        const qs = new URLSearchParams({mode:"admin_laporan",type:"custom",tglAwal:document.getElementById("delayTglAwal").value,tglAkhir:document.getElementById("delayTglAkhir").value});
-        const res = await fetch(`${API}?${qs.toString()}`);
+        const res = await fetch(`${API}?mode=admin_laporan&type=custom`);
         const data = await res.json();
         
         if (data.result === "success") {
