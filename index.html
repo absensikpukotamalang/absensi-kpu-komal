@@ -629,7 +629,7 @@
       try {
         updateNetworkInfo();
         submitInfo.innerText = "Memuat data pegawai...";
-        const res = await fetch(API, { cache: "no-store" });
+        const res = await fetch(`${API}?mode=pegawai`, { cache: "no-store" });
         if (!res.ok) throw new Error("HTTP " + res.status);
         const text = await res.text();
         let data;
@@ -782,7 +782,7 @@
           hour12: false, hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta"
         });
 
-        const form = new FormData();
+        const form = new URLSearchParams();
         form.append("nama", nama.value);
         form.append("nip", nip.value);
         form.append("jenis", jenisAbsen.value || "WFO");
