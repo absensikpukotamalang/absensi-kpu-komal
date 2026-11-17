@@ -528,7 +528,7 @@
       const menitSekarang = timeToMinutes(jamSekarang);
       const menitBukaPagi = timeToMinutes(getConfigTime("jam_buka_web", "06:00"));
       const menitBatasKeterlambatan = timeToMinutes("08:30");
-      const menitBukaSore = timeToMinutes("15:30");
+      const menitBukaSore = timeToMinutes("13:30");
       const menitTutupMalam = timeToMinutes(getConfigTime("jam_tutup_web", "18:00"));
 
       const kondisiPagi = (menitSekarang >= menitBukaPagi && menitSekarang < menitBatasKeterlambatan);
