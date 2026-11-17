@@ -236,13 +236,28 @@
     .custom-modal-box.error .custom-modal-title { color: #c73d3d; }
     .custom-modal-box.warning .custom-modal-title { color: #d97706; }
     .custom-modal-message {
-      font-size: 22px;
+      font-size: 20px;
       line-height: 1.5;
       font-weight: 600;
       color: #374151;
-      margin-bottom: 28px;
+      margin-bottom: 24px;
       white-space: pre-wrap;
     }
+    .success-mark { width: 82px; height: 82px; margin: 0 auto 16px; border-radius: 50%; display:flex; align-items:center; justify-content:center; background:#16a34a; color:white; font-size:54px; font-weight:800; box-shadow:0 8px 20px #16a34a33; }
+    .success-details { text-align:left; background:#eaf7ef; border-radius:18px; padding:16px 18px; margin:18px 0; color:#1f2937; }
+    .success-row { display:flex; justify-content:space-between; gap:12px; padding:7px 0; border-bottom:1px solid #d5eadc; font-size:16px; }
+    .success-row:last-child { border-bottom:0; }
+    .success-row span { color:#4b5563; }
+    .success-row strong { text-align:right; overflow-wrap:anywhere; }
+    .success-status { border-radius:15px; padding:14px; margin:16px 0; font-size:19px; font-weight:800; }
+    .success-status.on-time { background:#dcfce7; color:#166534; }
+    .success-status.late { background:#fef3c7; color:#b45309; }
+    .success-recommend { margin-top:12px; background:#fff; border-radius:12px; padding:12px; color:#92400e; font-size:16px; font-weight:600; }
+    .success-recommend strong { display:block; font-size:25px; margin-top:4px; }
+    .custom-modal-box.attendance-success { max-width:520px; padding:28px 22px; }
+    .custom-modal-box.attendance-success .custom-modal-title { color:#111827; font-size:27px; margin-bottom:10px; }
+    .custom-modal-box.attendance-success .custom-modal-message { font-size:16px; font-weight:400; margin-bottom:20px; }
+    @media (max-width:480px) { .custom-modal-overlay { padding:12px; } .custom-modal-box.attendance-success { padding:24px 16px; } .success-row { font-size:14px; } }
     .custom-modal-btn {
       background: #111827;
       color: #ffffff;
@@ -742,6 +757,40 @@
         btnKirim.innerText = status ? "KIRIM ABSEN" : "MENGIRIM...";
     }
 
+    function escapeHtml(value) {
+      return String(value == null ? "" : value).replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;", "'":"&#39;"}[ch]));
+    }
+
+    function formatTanggalPresensi(iso) {
+      if (!iso) return "-";
+      const parts = String(iso).split("-").map(Number);
+      if (parts.length !== 3 || parts.some(Number.isNaN)) return iso;
+      return new Intl.DateTimeFormat("id-ID", { weekday:"long", day:"numeric", month:"long", year:"numeric", timeZone:"Asia/Jakarta" }).format(new Date(Date.UTC(parts[0], parts[1]-1, parts[2], 12)));
+    }
+
+    function tampilkanSuksesPresensi(data, status, callback) {
+      const masuk = status === "MASUK";
+      const terlambat = masuk ? Number(data.terlambat || 0) : 0;
+      const terlambatValid = terlambat > 0 && terlambat <= 59;
+      const title = masuk ? "Presensi MASUK Berhasil" : "Presensi PULANG Berhasil";
+      const tanggal = formatTanggalPresensi(data.tanggal || "");
+      const jam = masuk ? (data.jamMasuk || data.jam || "-") : (data.jamPulang || data.jam || "-");
+      modalBox.className = "custom-modal-box attendance-success";
+      modalTitle.innerText = title;
+      modalMessage.innerHTML = `
+        <div class="success-mark">✓</div>
+        <div class="success-details">
+          <div class="success-row"><span>Nama</span><strong>${escapeHtml(data.nama || nama.value)}</strong></div>
+          <div class="success-row"><span>NIP</span><strong>${escapeHtml(data.nip || nip.value)}</strong></div>
+          <div class="success-row"><span>Tanggal</span><strong>${escapeHtml(tanggal)}</strong></div>
+          <div class="success-row"><span>${masuk ? "Jam Masuk" : "Jam Pulang"}</span><strong>${escapeHtml(jam)} WIB</strong></div>
+        </div>
+        ${masuk ? (terlambatValid ? `<div class="success-status late">TERLAMBAT<br><span style="font-size:15px;font-weight:600">Terlambat ${terlambat} menit</span><div class="success-recommend">Rekomendasi jam pulang<strong>${escapeHtml(getRekomendasiPulang(terlambat))} WIB</strong></div></div>` : (terlambat > 59 ? `<div class="success-status late">TERLAMBAT<br><span style="font-size:15px;font-weight:600">Melebihi batas waktu keterlambatan</span></div>` : `<div class="success-status on-time">✓ &nbsp; Tepat Waktu</div>`)) : `<div class="success-status on-time">✓ &nbsp; Presensi pulang tercatat</div>`}
+        <div>Terima kasih, presensi Anda sudah tercatat.</div>`;
+      customModal.style.display = "flex";
+      modalBtn.onclick = function() { customModal.style.display = "none"; if (callback) callback(); };
+    }
+
     async function kirimAbsen() {
       try {
         resetSessionTimer();
@@ -821,21 +870,8 @@
           throw new Error(data.message || "Terjadi kesalahan sistem");
         }
 
-        submitInfo.innerText = "Presensi berhasil";
-
-        if (status === "MASUK") {
-          const terlambat = Number(data.terlambat || 0);
-          if (terlambat > 0 && terlambat <= 59) {
-            const rekomendasiPulang = getRekomendasiPulang(terlambat);
-            tampilkanDialog("Presensi Berhasil", "Anda terlambat " + terlambat + " menit.\nRekomendasi jam pulang " + rekomendasiPulang, "success", function() { location.reload(); });
-          } else if (terlambat > 59) {
-            tampilkanDialog("Presensi Berhasil", "Anda melebihi batas waktu keterlambatan.", "success", function() { location.reload(); });
-          } else {
-            tampilkanDialog("Presensi Berhasil", "Data masuk Anda telah aman tersimpan.", "success", function() { location.reload(); });
-          }
-        } else {
-          tampilkanDialog("Presensi Berhasil", "Data pulang Anda telah aman tersimpan.", "success", function() { location.reload(); });
-        }
+        submitInfo.innerText = "Presensi berhasil disimpan";
+        tampilkanSuksesPresensi(data, status, function() { location.reload(); });
 
       } catch (err) {
         console.error(err);
